@@ -123,7 +123,7 @@ export default function ContactPage() {
                       <p className="text-[14px] font-dm text-muted">
                         Within 24 hours
                         <br />
-                        Mon–Fri, 9am–6pm PHT
+                        Mon–Fri, 9am–6pm EST
                       </p>
                     </div>
                   </div>
