@@ -91,10 +91,10 @@ export default function Nav() {
         transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
-      <nav className="flex h-[72px] w-full items-center justify-between gap-8 pl-5 pr-4 sm:pl-8 sm:pr-6 lg:pl-12 lg:pr-10">
+      <nav className="grid h-[72px] w-full grid-cols-[1fr_auto_1fr] items-center gap-4 pl-5 pr-4 sm:pl-8 sm:pr-6 lg:pl-12 lg:pr-10">
         <Link
           href="/"
-          className="flex items-center gap-3"
+          className="flex items-center gap-3 justify-self-start"
           aria-label="AKT homepage"
         >
           <Image
@@ -115,7 +115,7 @@ export default function Nav() {
           </span>
         </Link>
 
-        <Tabs value={current} className="hidden md:block">
+        <Tabs value={current} className="hidden justify-self-center md:block">
           <TabsList className="h-auto items-stretch gap-2 rounded-none bg-transparent p-0 lg:gap-5">
             {links.map((link) => {
               const Icon = link.icon;
@@ -142,7 +142,7 @@ export default function Nav() {
           </TabsList>
         </Tabs>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 justify-self-end">
           {ready && isAdmin && (
             <Link
               href="/admin"
