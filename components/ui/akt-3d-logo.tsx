@@ -1,22 +1,28 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Akt3DLogoProps = {
   className?: string;
   modelPath?: string;
+  /** Target size (in scene units) the model is scaled to fill. Larger = bigger wordmark. */
+  fitSize?: number;
 };
 
 export function Akt3DLogo({
   className,
   modelPath = "/3d/akt3d.glb",
+  fitSize = 2.55,
 }: Akt3DLogoProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  // True when the browser can't give us a WebGL context — show a 2D fallback.
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
+    setFailed(false);
     let mounted = true;
     let cleanup: (() => void) | undefined;
 
@@ -30,11 +36,21 @@ export function Akt3DLogo({
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
-      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      let renderer: import("three").WebGLRenderer;
+      try {
+        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      } catch (err) {
+        // No WebGL context available (e.g. too many live contexts) — show the
+        // 2D fallback instead of throwing an unhandled error that crashes the
+        // whole page.
+        console.warn("Akt3DLogo: could not create a WebGL context.", err);
+        if (mounted) setFailed(true);
+        return;
+      }
       const logoGroup = new THREE.Group();
       const loader = new GLTFLoader();
-    const maxYaw = Math.PI / 4;
-    const maxPitch = Math.PI / 10;
+    const maxYaw = Math.PI / 9;
+    const maxPitch = Math.PI / 12;
     const clampRotation = () => {
       logoGroup.rotation.y = THREE.MathUtils.clamp(
         logoGroup.rotation.y,
@@ -62,6 +78,11 @@ export function Akt3DLogo({
 
       renderer.setClearColor(0x000000, 0);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      // Make the canvas exactly fill (and stay centered in) the container at any
+      // device pixel ratio, so the wordmark renders dead-center.
+      renderer.domElement.style.display = "block";
+      renderer.domElement.style.width = "100%";
+      renderer.domElement.style.height = "100%";
       containerRef.current.appendChild(renderer.domElement);
       scene.add(logoGroup);
 
@@ -97,13 +118,20 @@ export function Akt3DLogo({
         child.geometry.computeBoundingSphere();
       });
 
-      const box = new THREE.Box3().setFromObject(object);
-      const size = box.getSize(new THREE.Vector3());
-      const center = box.getCenter(new THREE.Vector3());
+      // 1. Scale to the target size based on the model's natural bounds.
+      const sizeBox = new THREE.Box3().setFromObject(object);
+      const size = sizeBox.getSize(new THREE.Vector3());
       const maxAxis = Math.max(size.x, size.y, size.z);
+      object.scale.setScalar(
+        Number.isFinite(maxAxis) && maxAxis > 0 ? fitSize / maxAxis : 0.6,
+      );
 
+      // 2. Recenter using the *scaled* bounds so the model sits dead-center
+      //    in the canvas (otherwise an off-origin GLB drifts off-screen).
+      object.updateMatrixWorld(true);
+      const centerBox = new THREE.Box3().setFromObject(object);
+      const center = centerBox.getCenter(new THREE.Vector3());
       object.position.sub(center);
-      object.scale.setScalar(Number.isFinite(maxAxis) && maxAxis > 0 ? 2.55 / maxAxis : 0.6);
     };
 
     loader.load(modelPath, (gltf) => {
@@ -133,7 +161,7 @@ export function Akt3DLogo({
       glowShells.forEach((shell) => model.add(shell));
       logoGroup.add(model);
       logoGroup.rotation.x = -0.04;
-      logoGroup.rotation.y = -0.25;
+      logoGroup.rotation.y = -0.08;
     });
 
     const resize = () => {
@@ -235,6 +263,8 @@ export function Akt3DLogo({
         });
 
         glowShellMaterial.dispose();
+        // Free the WebGL context immediately so it doesn't leak across navigations.
+        renderer.forceContextLoss();
         renderer.dispose();
         renderer.domElement.remove();
       };
@@ -244,13 +274,25 @@ export function Akt3DLogo({
       mounted = false;
       cleanup?.();
     };
-  }, [modelPath]);
+  }, [modelPath, fitSize]);
 
   return (
-    <div
-      ref={containerRef}
-      className={className}
-      aria-label="Interactive 3D AKT logo"
-    />
+    <div ref={containerRef} className={className} aria-label="Interactive 3D AKT logo">
+      {failed && (
+        <div className="flex h-full w-full items-center justify-center">
+          <span
+            className="select-none font-syne font-extrabold tracking-tight text-[#0abfa3]"
+            style={{
+              fontSize: "clamp(48px, 14vw, 170px)",
+              lineHeight: 1,
+              textShadow:
+                "0 0 30px rgba(10,191,163,0.6), 0 0 70px rgba(10,191,163,0.35)",
+            }}
+          >
+            AKT
+          </span>
+        </div>
+      )}
+    </div>
   );
 }

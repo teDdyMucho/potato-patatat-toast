@@ -4,18 +4,21 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ArrowUpRight,
   Bot,
   BriefcaseBusiness,
+  ChevronDown,
   Handshake,
   House,
+  LogOut,
   Menu,
   Newspaper,
+  ShieldCheck,
   UserRound,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/lib/auth";
 
 const links = [
   { label: "Overview", href: "/", value: "home", icon: House },
@@ -43,10 +46,25 @@ function activeValue(pathname: string) {
 
 export default function Nav() {
   const pathname = usePathname();
+  const { user, ready, isAdmin, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(true);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const lastScrollY = useRef(0);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const current = activeValue(pathname);
+
+  // Close the user dropdown when clicking outside it.
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [userMenuOpen]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -67,13 +85,13 @@ export default function Nav() {
 
   return (
     <header
-      className="fixed left-0 right-0 top-0 z-50 border-t border-white/10 bg-transparent"
+      className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-[#0a0a0c]/90 shadow-[0_1px_0_0_rgba(255,255,255,0.02)] backdrop-blur-md"
       style={{
         transform: visible ? "translateY(0)" : "translateY(-110%)",
         transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
-      <nav className="mx-auto flex h-[68px] max-w-7xl items-center justify-between px-5 sm:px-6">
+      <nav className="flex h-[72px] w-full items-center justify-between gap-8 pl-5 pr-4 sm:pl-8 sm:pr-6 lg:pl-12 lg:pr-10">
         <Link
           href="/"
           className="flex items-center gap-3"
@@ -98,7 +116,7 @@ export default function Nav() {
         </Link>
 
         <Tabs value={current} className="hidden md:block">
-          <TabsList className="h-auto rounded-none border-b border-white/10 bg-transparent p-0">
+          <TabsList className="h-auto items-stretch gap-2 rounded-none bg-transparent p-0 lg:gap-5">
             {links.map((link) => {
               const Icon = link.icon;
 
@@ -107,11 +125,11 @@ export default function Nav() {
                 key={link.value}
                 value={link.value}
                 asChild
-                className="relative flex-col rounded-none px-5 py-2.5 text-xs font-medium text-white/45 after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-transparent hover:text-white/75 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:after:bg-white"
+                className="group relative flex-col px-4 py-2.5 text-xs font-medium text-white/45 transition duration-200 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-transparent hover:text-white hover:[text-shadow:0_0_12px_rgba(255,255,255,0.55)] data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none data-[state=active]:after:bg-[#0ABFA3] lg:px-5"
               >
                 <Link href={link.href} className="flex flex-col items-center">
                   <Icon
-                    className="mb-1.5 opacity-70"
+                    className="mb-1.5 opacity-70 transition duration-200 group-hover:opacity-100 group-hover:drop-shadow-[0_0_7px_rgba(255,255,255,0.65)]"
                     size={16}
                     strokeWidth={2}
                     aria-hidden="true"
@@ -125,13 +143,63 @@ export default function Nav() {
         </Tabs>
 
         <div className="flex items-center gap-3">
-          <Link
-            href="/contact"
-            className="hidden items-center gap-2 rounded-md bg-white px-4 py-2.5 text-sm font-bold text-black transition-colors hover:bg-[#0abfa3] hover:text-black sm:inline-flex"
-          >
-            Book Call
-            <ArrowUpRight size={15} />
-          </Link>
+          {ready && isAdmin && (
+            <Link
+              href="/admin"
+              className="hidden items-center gap-1.5 rounded-md border border-[#0ABFA3]/40 px-3.5 py-2.5 text-sm font-semibold text-[#0ABFA3] transition-colors hover:bg-[#0ABFA3]/10 sm:inline-flex"
+            >
+              <ShieldCheck size={15} />
+              Admin
+            </Link>
+          )}
+          {ready &&
+            (user ? (
+              <div ref={userMenuRef} className="relative hidden sm:block">
+                <button
+                  onClick={() => setUserMenuOpen((o) => !o)}
+                  aria-haspopup="menu"
+                  aria-expanded={userMenuOpen}
+                  className="flex items-center gap-2 rounded-md border border-white/15 px-3.5 py-2.5 text-sm font-medium text-white/80 transition-colors hover:border-white/30 hover:text-white"
+                >
+                  <UserRound size={15} className="text-white/55" />
+                  {user.name.split(" ")[0]}
+                  <ChevronDown
+                    size={14}
+                    className={`text-white/50 transition-transform duration-200 ${
+                      userMenuOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {userMenuOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-lg border border-white/10 bg-[#141416] shadow-xl shadow-black/40"
+                  >
+                    <div className="border-b border-white/10 px-4 py-3">
+                      <p className="truncate text-sm font-semibold text-white">{user.name}</p>
+                      <p className="truncate text-xs text-white/50">{user.email}</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        logout();
+                      }}
+                      className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                    >
+                      <LogOut size={15} />
+                      Log out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="hidden items-center gap-1.5 rounded-md border border-white/15 px-4 py-2.5 text-sm font-medium text-white/70 transition-colors hover:border-white/30 hover:text-white sm:inline-flex"
+              >
+                Log in
+              </Link>
+            ))}
           <button
             className="rounded-md border border-white/15 p-2 text-white/70 transition-colors hover:text-white md:hidden"
             onClick={() => setOpen((value) => !value)}
@@ -159,13 +227,36 @@ export default function Nav() {
                 {link.label}
               </Link>
             ))}
-            <Link
-              href="/contact"
-              onClick={() => setOpen(false)}
-              className="mt-2 rounded-md bg-white px-3 py-2.5 text-center text-sm font-bold text-black"
-            >
-              Book Call
-            </Link>
+            {ready && isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-[#0ABFA3] transition-colors hover:bg-[#0ABFA3]/10"
+              >
+                <ShieldCheck size={15} />
+                Admin
+              </Link>
+            )}
+            {ready &&
+              (user ? (
+                <button
+                  onClick={() => {
+                    logout();
+                    setOpen(false);
+                  }}
+                  className="rounded-md px-3 py-2 text-left text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                >
+                  Log out ({user.name.split(" ")[0]})
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setOpen(false)}
+                  className="rounded-md px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                >
+                  Log in
+                </Link>
+              ))}
           </div>
         </div>
       )}

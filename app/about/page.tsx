@@ -1,6 +1,7 @@
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import { Akt3DLogo } from "@/components/ui/akt-3d-logo";
+import ProcessSteps from "@/components/about/ProcessSteps";
 import {
   ArrowUpRight,
   Award,
@@ -291,7 +292,10 @@ export default function AboutPage() {
                   className="pointer-events-none absolute inset-0 rounded-full blur-3xl"
                   style={{ background: "radial-gradient(circle, rgba(10,191,163,0.18) 0%, transparent 70%)" }}
                 />
-                <Akt3DLogo className="h-[260px] sm:h-[360px] lg:h-[420px] w-full max-w-[520px] cursor-grab touch-none active:cursor-grabbing" />
+                <Akt3DLogo
+                  fitSize={3.5}
+                  className="h-[300px] sm:h-[400px] lg:h-[480px] w-full max-w-[600px] cursor-grab touch-none active:cursor-grabbing"
+                />
               </div>
             </div>
           </div>
@@ -372,51 +376,7 @@ export default function AboutPage() {
             >
               How AKT builds your AI system.
             </h2>
-            <div className="space-y-6 max-w-3xl">
-              {[
-                {
-                  step: "01",
-                  title: "Discovery & Systems Audit",
-                  desc: "We map your current tools, workflows, and gaps. We find what can be automated, what AI can replace, and where integration is missing. Your custom stack blueprint comes from here.",
-                },
-                {
-                  step: "02",
-                  title: "Stack Design & Tool Selection",
-                  desc: "We select GoHighLevel, n8n, Retell AI, Claude AI, Supabase, Monday.com — the exact combination your business needs. No overbuilt, no underbuilt. Purpose-designed.",
-                },
-                {
-                  step: "03",
-                  title: "Build, Integrate & Connect",
-                  desc: "We build every system and wire them together. Leads from voice AI flow to GHL pipelines. Lead scraper outputs trigger email sequences. Everything connected — zero manual handoffs.",
-                },
-                {
-                  step: "04",
-                  title: "Deploy AI Into Your Workforce",
-                  desc: "AI agents go live as active members of your team — answering calls, responding to leads, posting content, tracking tasks, and reporting metrics. Your business runs while your team sleeps.",
-                },
-                {
-                  step: "05",
-                  title: "Monitor, Maintain & Optimize",
-                  desc: "We watch every system post-launch. Errors resolved before they impact operations. Prompts updated as your business evolves. Stack maintained at zero downtime — indefinitely.",
-                },
-              ].map((item) => (
-                <div
-                  key={item.step}
-                  className="flex gap-6 items-start rounded-card border border-border bg-[#101113] px-6 py-5"
-                >
-                  <div
-                    className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-syne font-extrabold"
-                    style={{ background: "#0ABFA3", color: "white" }}
-                  >
-                    {item.step}
-                  </div>
-                  <div>
-                    <p className="font-syne text-body text-[16px] font-bold mb-1">{item.title}</p>
-                    <p className="text-[13px] font-dm text-muted leading-relaxed">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ProcessSteps />
           </div>
         </section>
 

@@ -91,8 +91,8 @@ export default function AIToolsSection() {
               Free AI Tools for Business
             </h2>
             <p className="text-[15px] font-dm text-muted max-w-xl">
-              Built with Claude AI — try AKT&apos;s AI tools for free, no login
-              required. Experience the quality of our AI work firsthand.
+              Built with Claude AI — try AKT&apos;s AI tools for free with a
+              quick account. Experience the quality of our AI work firsthand.
             </p>
           </div>
           <Link

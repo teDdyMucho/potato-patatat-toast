@@ -184,11 +184,18 @@ export function GLSLHills({
         }
       }
 
-      const renderer = new THREE.WebGLRenderer({
-        canvas: canvasRef.current,
-        antialias: false,
-        alpha: true,
-      });
+      let renderer: import("three").WebGLRenderer;
+      try {
+        renderer = new THREE.WebGLRenderer({
+          canvas: canvasRef.current,
+          antialias: false,
+          alpha: true,
+        });
+      } catch (err) {
+        // No WebGL context available — skip the background gracefully.
+        console.warn("GLSLHills: could not create a WebGL context.", err);
+        return;
+      }
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(45, 1, 1, 10000);
       const clock = new THREE.Clock();
@@ -229,6 +236,8 @@ export function GLSLHills({
         scene.remove(plane.mesh);
         plane.mesh.geometry.dispose();
         plane.mesh.material.dispose();
+        // Free the WebGL context immediately so it doesn't leak across navigations.
+        renderer.forceContextLoss();
         renderer.dispose();
       };
     })();

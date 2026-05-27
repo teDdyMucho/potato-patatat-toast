@@ -1,46 +1,135 @@
-import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import { NextResponse } from "next/server";
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-const SYSTEM_PROMPT = `You are AKT's AI assistant on aktservices.com. AKT Virtual Assistance Services is a Philippine-based AI automation agency that builds:
-- Salesforce email automation and MCA outreach systems
-- n8n workflow automation (Zapier migration, custom pipelines)
-- GoHighLevel CRM systems and AI assistants
-- Retell AI voice agents for 24/7 call handling and appointment booking
-- Custom AI chatbots (chat + SMS, cheaper than Closebot)
-- AI content creation platforms (Veo 3.1, Kling, Imagen, Grok Imagine)
-- Lead scraping engines with AI qualification
-- Multilingual AI agents for real estate
-- Business analytics dashboards
-- Monday.com automation and job management systems
-- Full-stack business automation for agencies, crypto studios, roofing, distribution, finance, and more
+/**
+ * AKT chatbot — proxies the visitor's message to the n8n webhook and returns
+ * its reply as the assistant message. Proxied server-side (not from the
+ * browser) to avoid CORS. Override the URL with CHATBOT_WEBHOOK_URL.
+ */
+const WEBHOOK_URL =
+  process.env.CHATBOT_WEBHOOK_URL ||
+  "https://primary-production-6722.up.railway.app/webhook/aktservices-chatbot";
 
-Keep every reply SHORT — 1 to 3 sentences max. Be helpful and direct. Speak naturally, not like a brochure.
+// AI replies can take a while; don't hang forever.
+const TIMEOUT_MS = 60_000;
 
-If someone asks about pricing, timelines, or wants to work with AKT, encourage them to book a free consultation. If they ask what AKT builds, briefly describe the relevant service. Never write long paragraphs.`;
+type Msg = { role: "user" | "assistant"; content: string };
 
-export async function POST(req: NextRequest) {
+/** Pull a reply string out of whatever shape the webhook returns. */
+function extractReply(payload: unknown): string | null {
+  if (payload == null) return null;
+  if (typeof payload === "string") return payload.trim() || null;
+
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      const r = extractReply(item);
+      if (r) return r;
+    }
+    return null;
+  }
+
+  if (typeof payload === "object") {
+    const obj = payload as Record<string, unknown>;
+    // Common n8n / AI-agent reply fields, in priority order.
+    for (const key of ["output", "reply", "text", "answer", "response", "message", "content"]) {
+      const v = obj[key];
+      if (typeof v === "string" && v.trim()) return v.trim();
+    }
+    // Dig into wrappers — but NOT `body`, which is the request the n8n webhook
+    // echoes back when no real reply has been produced yet.
+    for (const key of ["data", "json", "result"]) {
+      const v = obj[key];
+      if (v && typeof v === "object") {
+        const nested = extractReply(v);
+        if (nested) return nested;
+      }
+    }
+  }
+  return null;
+}
+
+/** True when the webhook just echoed our request (n8n default "immediate" response). */
+function isRequestEcho(payload: unknown): boolean {
+  const first = Array.isArray(payload) ? payload[0] : payload;
+  return (
+    !!first &&
+    typeof first === "object" &&
+    "webhookUrl" in (first as Record<string, unknown>) &&
+    "executionMode" in (first as Record<string, unknown>)
+  );
+}
+
+export async function POST(req: Request) {
+  let body: { messages?: Msg[]; sessionId?: string };
   try {
-    const { messages } = await req.json();
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ reply: "Invalid request." }, { status: 400 });
+  }
 
-    const completion = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      max_tokens: 180,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        ...messages,
-      ],
+  const messages = Array.isArray(body.messages) ? body.messages : [];
+  const lastUser =
+    [...messages].reverse().find((m) => m.role === "user")?.content?.trim() || "";
+
+  if (!lastUser) {
+    return NextResponse.json({ reply: "Please type a message." }, { status: 400 });
+  }
+
+  try {
+    const res = await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // Send the message under several common keys so the n8n flow can read
+      // whichever it expects, plus the full history + a session id for memory.
+      body: JSON.stringify({
+        message: lastUser,
+        chatInput: lastUser,
+        sessionId: body.sessionId,
+        messages,
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
     });
 
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      console.error("chatbot webhook error:", res.status, errText.slice(0, 300));
+      return NextResponse.json(
+        { reply: "Sorry, I couldn't reach the assistant right now. Please try again." },
+        { status: 502 },
+      );
+    }
+
+    const text = await res.text();
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      /* webhook returned plain text */
+    }
+
+    // The n8n flow isn't returning an AI reply yet (it echoed the request).
+    if (parsed != null && isRequestEcho(parsed)) {
+      console.warn("chatbot webhook echoed the request — finish the n8n flow + 'Respond to Webhook'.");
+      return NextResponse.json({
+        reply: "The assistant isn't fully set up yet. Please try again shortly.",
+      });
+    }
+
+    // Only fall back to raw text when the response WASN'T JSON (avoid dumping JSON).
+    const reply = parsed != null ? extractReply(parsed) : text.trim() || null;
     return NextResponse.json({
-      reply: completion.choices[0]?.message?.content ?? "Sorry, something went wrong.",
+      reply: reply || "I didn't catch a response — please try again.",
     });
   } catch (err) {
-    console.error("Chat API error:", err);
-    return NextResponse.json(
-      { reply: "Connection error. Please try again." },
-      { status: 500 }
-    );
+    if (err instanceof Error && err.name === "TimeoutError") {
+      return NextResponse.json(
+        { reply: "That took too long to respond. Please try again." },
+        { status: 504 },
+      );
+    }
+    console.error("chatbot proxy error:", err);
+    return NextResponse.json({ reply: "Connection error. Please try again." }, { status: 500 });
   }
 }

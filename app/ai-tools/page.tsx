@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/lib/auth";
 import {
   Zap,
   ArrowUpRight,
@@ -14,6 +17,7 @@ import {
   Mail,
   Calendar,
   Target,
+  Wand2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -128,52 +132,53 @@ const tools = [
     sessions: "329",
     badge: null,
   },
+  {
+    category: "Design AI",
+    name: "Design Adjuster",
+    description:
+      "Upload a property photo, then brush a mask over just the area you want to change — a wall, the flooring, countertops, fixtures, or an empty room to restage. AI edits only inside your selection (inpainting) while everything outside it stays pixel-perfect, so you can tweak or restyle one region at a time and iterate, instead of regenerating the whole image.",
+    icon: Wand2,
+    color: "#0ABFA3",
+    bg: "#073B34",
+    sessions: "128",
+    badge: "New",
+  },
 ];
 
 const categories = [
   "All",
   "Sales AI",
   "Content AI",
+  "Design AI",
   "Productivity AI",
   "Automation AI",
 ];
 
 export default function AIToolsPage() {
+  const router = useRouter();
+  const { user, ready } = useAuth();
   const [active, setActive] = useState("All");
-  const [activeToolIndex, setActiveToolIndex] = useState<number | null>(null);
-  const [inputValue, setInputValue] = useState("");
-  const [output, setOutput] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const filtered =
     active === "All" ? tools : tools.filter((t) => t.category === active);
 
-  const handleTry = async (toolName: string, index: number) => {
-    setActiveToolIndex(index);
-    setOutput("");
+  // Tools that have their own dedicated page.
+  const toolPages: Record<string, string> = {
+    "Design Adjuster": "/ai-tools/design-adjuster",
   };
 
-  const handleRun = async () => {
-    if (!inputValue.trim() || activeToolIndex === null) return;
-    setLoading(true);
-    setOutput("");
+  const handleTry = (toolName: string) => {
+    const dest = toolPages[toolName] ?? null;
 
-    try {
-      const res = await fetch("/api/ai-tool", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tool: filtered[activeToolIndex]?.name,
-          input: inputValue,
-        }),
-      });
-      const data = await res.json();
-      setOutput(data.result || "No output returned.");
-    } catch {
-      setOutput("Error connecting to AI. Please try again.");
-    } finally {
-      setLoading(false);
+    // Gate behind login: not signed in → send to the login page, then come back.
+    if (ready && !user) {
+      router.push(`/login?redirect=${encodeURIComponent(dest ?? "/ai-tools")}`);
+      return;
     }
+
+    // Signed in: open the tool's page if it has one.
+    if (dest) router.push(dest);
+    // (Other tools don't have a run experience wired up yet.)
   };
 
   return (
@@ -196,199 +201,127 @@ export default function AIToolsPage() {
                 <span style={{ color: "#0ABFA3" }}>Real business results.</span>
               </h1>
               <p className="text-[16px] font-dm text-muted leading-relaxed">
-                Built with Claude AI — try AKT&apos;s AI tools for free. No
-                login, no commitment. Experience the quality of our AI work
-                firsthand before you hire us to build it for your business.
+                Built with Claude AI — try AKT&apos;s AI tools for free. Create a
+                free account, no commitment. Experience the quality of our AI
+                work firsthand before you hire us to build it for your business.
               </p>
             </div>
           </div>
         </section>
 
         {/* Tools */}
-        <section className="py-16 bg-black">
-          <div className="max-w-7xl mx-auto px-6">
+        <section className="relative overflow-hidden py-16 bg-[#050608]">
+          {/* Futuristic backdrop (same as the Design Adjuster) */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage:
+                "linear-gradient(#0ABFA3 1px, transparent 1px), linear-gradient(90deg, #0ABFA3 1px, transparent 1px)",
+              backgroundSize: "44px 44px",
+            }}
+          />
+          <div className="pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-[#0ABFA3]/10 blur-[160px]" />
+
+          <div className="relative z-10 max-w-7xl mx-auto px-6">
             {/* Filter */}
-            <div className="flex flex-wrap gap-2 mb-10">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    setActive(cat);
-                    setActiveToolIndex(null);
-                    setOutput("");
-                    setInputValue("");
-                  }}
-                  className="px-4 py-1.5 rounded-full text-[12px] font-dm font-semibold transition-all duration-150"
-                  style={{
-                    background: active === cat ? "#0ABFA3" : "white",
-                    color: active === cat ? "white" : "#A1A1AA",
-                    border: `1px solid ${active === cat ? "#0ABFA3" : "#2C2C2E"}`,
-                  }}
-                >
-                  {cat}
-                </button>
-              ))}
+            <div className="mb-10 flex flex-wrap gap-2.5">
+              {categories.map((cat, i) => {
+                const isActive = active === cat;
+                return (
+                  <motion.button
+                    key={cat}
+                    onClick={() => setActive(cat)}
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: i * 0.05, ease: "easeOut" }}
+                    whileHover={{ scale: 1.06 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`relative rounded-full border px-4 py-2 text-[12px] font-dm font-semibold transition-colors duration-200 ${
+                      isActive
+                        ? "border-transparent text-white"
+                        : "border-border bg-white/[0.03] text-muted hover:border-[#0ABFA3]/50 hover:text-[#7fffee]"
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.span
+                        layoutId="aiToolsActivePill"
+                        className="absolute inset-0 rounded-full"
+                        style={{
+                          background: "#0ABFA3",
+                          boxShadow: "0 0 18px rgba(10,191,163,0.45)",
+                        }}
+                        transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                      />
+                    )}
+                    <span className="relative z-10">{cat}</span>
+                  </motion.button>
+                );
+              })}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Tool cards */}
-              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5 content-start">
-                {filtered.map((tool, i) => {
-                  const Icon = tool.icon;
-                  const isActive = activeToolIndex === i;
-                  return (
-                    <div
-                      key={i}
-                      className="group bg-[#101113] rounded-card flex flex-col transition-all duration-200 overflow-hidden"
-                      style={{
-                        border: isActive
-                          ? "1.5px solid #0ABFA3"
-                          : "1px solid #2C2C2E",
-                        boxShadow: isActive ? "0 4px 16px rgba(29,111,235,0.10)" : "none",
-                      }}
-                    >
-                      <div className="p-5 flex-1">
-                        <div className="flex items-start justify-between mb-3">
-                          <div
-                            className="w-9 h-9 rounded-lg flex items-center justify-center"
-                            style={{ background: tool.bg }}
-                          >
-                            <Icon size={18} style={{ color: tool.color }} strokeWidth={1.75} />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {tool.badge && (
-                              <span
-                                className="text-[10px] font-dm font-bold px-2 py-0.5 rounded-full"
-                                style={{
-                                  background:
-                                    tool.badge === "New" ? "#073B34" : "#062B26",
-                                  color:
-                                    tool.badge === "New" ? "#0ABFA3" : "#0ABFA3",
-                                }}
-                              >
-                                {tool.badge}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <h3
-                          className="font-syne text-body text-[15px] font-bold mb-1.5"
-                          style={{ letterSpacing: "-0.01em" }}
-                        >
-                          {tool.name}
-                        </h3>
-                        <p className="text-[12px] font-dm text-muted leading-relaxed mb-3">
-                          {tool.description}
-                        </p>
-                        <p className="text-[11px] font-dm text-muted">
-                          <span className="font-semibold text-body">{tool.sessions}</span> sessions
-                        </p>
-                      </div>
-                      <div className="px-5 pb-4">
-                        <button
-                          onClick={() => handleTry(tool.name, i)}
-                          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-md text-[12px] font-dm font-semibold transition-colors"
-                          style={{
-                            background: isActive ? "#0ABFA3" : "#0ABFA3",
-                            color: "white",
-                          }}
-                        >
-                          <Zap size={12} fill="white" />
-                          {isActive ? "Selected" : "Try Now"}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Live demo panel */}
-              <div className="lg:col-span-1">
-                <div
-                  className="sticky top-20 bg-[#101113] rounded-card border border-border p-6"
-                  style={{ minHeight: "400px" }}
-                >
-                  {activeToolIndex === null ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center py-12">
+            {/* Tools — card grid */}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((tool, i) => {
+                const Icon = tool.icon;
+                return (
+                  <div
+                    key={i}
+                    className="glow-card group relative flex flex-col rounded-card border border-border bg-[#101113] p-6 transition-all duration-200 hover:shadow-card"
+                  >
+                    {/* Header: icon + badge */}
+                    <div className="mb-4 flex items-start justify-between">
                       <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center mb-4"
-                        style={{ background: "#073B34" }}
+                        className="flex h-11 w-11 items-center justify-center rounded-lg"
+                        style={{ background: tool.bg }}
                       >
-                        <Zap size={22} style={{ color: "#0ABFA3" }} />
+                        <Icon size={20} style={{ color: tool.color }} strokeWidth={1.75} />
                       </div>
-                      <p
-                        className="font-syne text-body text-[15px] font-bold mb-2"
-                        style={{ letterSpacing: "-0.01em" }}
-                      >
-                        Pick a tool to try
-                      </p>
-                      <p className="text-[13px] font-dm text-muted">
-                        Select any tool from the list to run it live — powered by Claude AI.
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2 mb-5">
-                        <div
-                          className="w-7 h-7 rounded-md flex items-center justify-center"
-                          style={{ background: filtered[activeToolIndex].bg }}
-                        >
-                          {(() => {
-                            const Icon = filtered[activeToolIndex].icon;
-                            return (
-                              <Icon
-                                size={14}
-                                style={{ color: filtered[activeToolIndex].color }}
-                                strokeWidth={1.75}
-                              />
-                            );
-                          })()}
-                        </div>
+                      <div className="flex items-center gap-2">
                         <span
-                          className="font-syne text-body text-[14px] font-bold"
-                          style={{ letterSpacing: "-0.01em" }}
+                          className="rounded-full px-2.5 py-0.5 text-[10px] font-dm font-semibold"
+                          style={{ background: "#062B26", color: "#0ABFA3" }}
                         >
-                          {filtered[activeToolIndex].name}
+                          {tool.category}
                         </span>
+                        {tool.badge && (
+                          <span
+                            className="rounded-full px-2.5 py-0.5 text-[10px] font-dm font-bold"
+                            style={{ background: "#073B34", color: "#0ABFA3" }}
+                          >
+                            {tool.badge}
+                          </span>
+                        )}
                       </div>
+                    </div>
 
-                      <label className="block text-[12px] font-dm font-semibold text-muted uppercase tracking-wide mb-2">
-                        Your Input
-                      </label>
-                      <textarea
-                        className="w-full border border-border rounded-md p-3 text-[13px] font-dm text-body resize-none focus:outline-none focus:border-primary transition-colors"
-                        rows={5}
-                        placeholder="Enter your content, leads, topic, or question here..."
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                      />
+                    {/* Body */}
+                    <h3
+                      className="font-syne text-body text-[16px] font-bold mb-2 group-hover:text-primary transition-colors"
+                      style={{ letterSpacing: "-0.01em" }}
+                    >
+                      {tool.name}
+                    </h3>
+                    <p className="flex-1 text-[13px] font-dm text-muted leading-relaxed mb-5">
+                      {tool.description}
+                    </p>
 
+                    {/* Footer: sessions + action */}
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[11px] font-dm text-muted">
+                        <span className="font-semibold text-body">{tool.sessions}</span> sessions
+                      </span>
                       <button
-                        onClick={handleRun}
-                        disabled={!inputValue.trim() || loading}
-                        className="w-full mt-3 py-2.5 rounded-md text-[13px] font-dm font-semibold text-white transition-colors disabled:opacity-50"
+                        onClick={() => handleTry(tool.name)}
+                        className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[12px] font-dm font-semibold text-white transition-opacity hover:opacity-90"
                         style={{ background: "#0ABFA3" }}
                       >
-                        {loading ? "Running Claude AI..." : "Run Tool →"}
+                        <Zap size={12} fill="white" />
+                        Try Now
                       </button>
-
-                      {output && (
-                        <div className="mt-5">
-                          <label className="block text-[12px] font-dm font-semibold text-muted uppercase tracking-wide mb-2">
-                            AI Output
-                          </label>
-                          <div
-                            className="rounded-md p-4 text-[13px] font-dm text-body leading-relaxed whitespace-pre-wrap border"
-                            style={{ background: "#101113", borderColor: "#2C2C2E" }}
-                          >
-                            {output}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>

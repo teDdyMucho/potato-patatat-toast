@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ArrowUpRight, MessageCircle, Send, X } from "lucide-react";
 import { Akt3DLogo } from "@/components/ui/akt-3d-logo";
 import { GLSLHills } from "@/components/ui/glsl-hills";
+import GhlAffiliate from "@/components/GhlAffiliate";
 import { TypewriterEffectSmooth } from "@/components/ui/typewriter-effect";
 import Nav from "@/components/Nav";
 import { useEffect, useRef, useState } from "react";
@@ -37,6 +38,12 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  // Stable id so the webhook/n8n flow can keep this chat's memory.
+  const [sessionId] = useState(() =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2),
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -84,7 +91,7 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: next, sessionId }),
       });
       const data = await res.json();
       setMessages([...next, { role: "assistant", content: data.reply }]);
@@ -111,6 +118,9 @@ export default function Home() {
 
       <Nav />
 
+      {/* GoHighLevel affiliate badge — top-right */}
+      <GhlAffiliate />
+
       <div className="pointer-events-none absolute left-1/2 top-[34%] z-20 h-[min(46vw,46vh)] w-[min(46vw,46vh)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#0abfa3]/20 blur-3xl" />
       <Akt3DLogo className="absolute left-1/2 top-[34%] z-30 h-[min(58vw,58vh)] w-[min(68vw,68vh)] -translate-x-1/2 -translate-y-1/2 cursor-grab touch-none active:cursor-grabbing" />
 
@@ -120,7 +130,7 @@ export default function Home() {
         style={{
           top: chatOpen ? "50%" : "58%",
           transform: "translate(-50%, -50%)",
-          maxWidth: chatOpen ? "min(400px, calc(100vw - 32px))" : "min(360px, calc(100vw - 32px))",
+          maxWidth: chatOpen ? "min(540px, calc(100vw - 32px))" : "min(360px, calc(100vw - 32px))",
         }}
       >
         <div
@@ -167,7 +177,7 @@ export default function Home() {
               </div>
 
               {/* Messages */}
-              <div className="mb-3 flex max-h-[260px] flex-col gap-2 overflow-y-auto pr-0.5 scrollbar-none">
+              <div className="mb-3 flex h-[min(460px,60vh)] flex-col gap-2 overflow-y-auto pr-0.5 scrollbar-none">
                 {messages.map((m, i) => (
                   <div
                     key={i}

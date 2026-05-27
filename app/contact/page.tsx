@@ -36,10 +36,31 @@ export default function ContactPage() {
     contactTime: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setError("");
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Something went wrong.");
+      setSubmitted(true);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `${err.message} You can also email admin@aktservices.org directly.`
+          : "Couldn't send. Please email admin@aktservices.org directly.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -219,7 +240,7 @@ export default function ContactPage() {
                         <input
                           type="text"
                           required
-                          className="w-full border border-border rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder-muted focus:outline-none focus:border-primary transition-colors"
+                          className="w-full border border-border bg-background rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder:text-muted/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors"
                           placeholder="Your name"
                           value={form.name}
                           onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -231,7 +252,7 @@ export default function ContactPage() {
                         </label>
                         <input
                           type="text"
-                          className="w-full border border-border rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder-muted focus:outline-none focus:border-primary transition-colors"
+                          className="w-full border border-border bg-background rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder:text-muted/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors"
                           placeholder="Company name"
                           value={form.company}
                           onChange={(e) => setForm({ ...form, company: e.target.value })}
@@ -247,7 +268,7 @@ export default function ContactPage() {
                         <input
                           type="email"
                           required
-                          className="w-full border border-border rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder-muted focus:outline-none focus:border-primary transition-colors"
+                          className="w-full border border-border bg-background rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder:text-muted/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors"
                           placeholder="your@email.com"
                           value={form.email}
                           onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -259,7 +280,7 @@ export default function ContactPage() {
                         </label>
                         <input
                           type="tel"
-                          className="w-full border border-border rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder-muted focus:outline-none focus:border-primary transition-colors"
+                          className="w-full border border-border bg-background rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder:text-muted/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors"
                           placeholder="+1 555 000 0000"
                           value={form.phone}
                           onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -279,7 +300,7 @@ export default function ContactPage() {
                             onClick={() => setForm({ ...form, need })}
                             className="px-3.5 py-1.5 rounded-full text-[12px] font-dm font-semibold transition-all duration-150 border"
                             style={{
-                              background: form.need === need ? "#0ABFA3" : "white",
+                              background: form.need === need ? "#0ABFA3" : "transparent",
                               color: form.need === need ? "white" : "#A1A1AA",
                               borderColor: form.need === need ? "#0ABFA3" : "#2C2C2E",
                             }}
@@ -297,7 +318,7 @@ export default function ContactPage() {
                       <textarea
                         required
                         rows={4}
-                        className="w-full border border-border rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder-muted focus:outline-none focus:border-primary transition-colors resize-none"
+                        className="w-full border border-border bg-background rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder:text-muted/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors resize-none"
                         placeholder="Describe your situation, goals, and what you'd like help with..."
                         value={form.message}
                         onChange={(e) => setForm({ ...form, message: e.target.value })}
@@ -310,19 +331,29 @@ export default function ContactPage() {
                       </label>
                       <input
                         type="text"
-                        className="w-full border border-border rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder-muted focus:outline-none focus:border-primary transition-colors"
+                        className="w-full border border-border bg-background rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder:text-muted/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors"
                         placeholder="e.g. Weekdays 10am–2pm EST"
                         value={form.contactTime}
                         onChange={(e) => setForm({ ...form, contactTime: e.target.value })}
                       />
                     </div>
 
+                    {error && (
+                      <p
+                        className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-[13px] font-dm text-red-300"
+                        role="alert"
+                      >
+                        {error}
+                      </p>
+                    )}
+
                     <button
                       type="submit"
-                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-md text-[14px] font-dm font-semibold text-white bg-primary hover:bg-primary-hover transition-colors"
+                      disabled={submitting}
+                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-md text-[14px] font-dm font-semibold text-white bg-primary hover:bg-primary-hover transition-colors disabled:opacity-60"
                     >
-                      Send Message
-                      <ArrowUpRight size={16} />
+                      {submitting ? "Sending…" : "Send Message"}
+                      {!submitting && <ArrowUpRight size={16} />}
                     </button>
 
                     <p className="text-[12px] font-dm text-muted text-center">

@@ -3,6 +3,9 @@ import Footer from "@/components/Footer";
 import { Calendar, ArrowUpRight, Clock } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { BLOG_COLUMNS, rowToPost, type BlogRow } from "@/lib/blog";
+import { fallbackPosts as staticPosts } from "@/lib/blog-fallback";
 
 export const metadata: Metadata = {
   title: "Blog | AKT Virtual Assistance Services — AI, VA & Business Growth",
@@ -10,75 +13,71 @@ export const metadata: Metadata = {
     "Expert insights on AI automation, Filipino virtual assistants, GoHighLevel, Retell AI, VAPI, CloseBot, and business growth strategies from AKT.",
 };
 
-const posts = [
-  {
-    category: "AI & Automation",
-    date: "May 18, 2026",
-    readTime: "8 min read",
-    title: "How We Set Up GoHighLevel Automation for a 7-Figure Real Estate Firm",
-    excerpt:
-      "A step-by-step breakdown of how AKT deployed GoHighLevel CRM + AI follow-up sequences that cut client response time by 80% — and the exact workflow structure we used.",
-    href: "/blog/gohighlevel-real-estate-automation",
-    tags: ["GoHighLevel", "Automation"],
-    featured: true,
-  },
-  {
-    category: "AI & Automation",
-    date: "May 12, 2026",
-    readTime: "11 min read",
-    title: "VAPI vs Retell AI: Which AI Voice Agent Is Right for Your Business in 2026?",
-    excerpt:
-      "We've deployed both at scale. Here's our unfiltered comparison based on real client deployments — pricing, call quality, integration capabilities, and who each one is best suited for.",
-    href: "/blog/vapi-vs-retell-ai",
-    tags: ["VAPI", "Retell AI"],
-    featured: false,
-  },
-  {
-    category: "VA Industry",
-    date: "May 5, 2026",
-    readTime: "7 min read",
-    title: "Why Filipino VAs Outperform: The AKT Hiring & Training Process",
-    excerpt:
-      "Inside AKT's proprietary VA onboarding system — how we select, assess, and deploy elite Filipino talent for global businesses, and why the Philippines remains the world's best VA source.",
-    href: "/blog/filipino-va-hiring-process",
-    tags: ["Filipino VAs", "Operations"],
-    featured: false,
-  },
-  {
-    category: "AI & Automation",
-    date: "Apr 28, 2026",
-    readTime: "9 min read",
-    title: "What Is CloseBot AI? A Complete Guide to AI-Powered Sales Automation",
-    excerpt:
-      "CloseBot is transforming how SMBs handle sales conversations. Here's everything you need to know — what it does, how to set it up, and why AKT uses it for client lead pipelines.",
-    href: "/blog/closebot-ai-guide",
-    tags: ["CloseBot", "Sales AI"],
-    featured: false,
-  },
-  {
-    category: "Business Growth",
-    date: "Apr 21, 2026",
-    readTime: "6 min read",
-    title: "How to Set Up GoHighLevel with a Virtual Assistant: The Complete Guide",
-    excerpt:
-      "One of the most-asked questions we get: can a VA manage GoHighLevel? Yes — here's how to set up GHL, train your VA, and build a system that runs without you.",
-    href: "/blog/gohighlevel-virtual-assistant-setup",
-    tags: ["GoHighLevel", "Filipino VAs"],
-    featured: false,
-  },
-  {
-    category: "AI & Automation",
-    date: "Apr 14, 2026",
-    readTime: "10 min read",
-    title: "Claude AI for Business: How to Use Anthropic's Claude in Your Operations",
-    excerpt:
-      "Claude AI is the most capable business AI model available today. Here's how AKT uses Claude to build automation workflows, content systems, and AI agents for SMB clients worldwide.",
-    href: "/blog/claude-ai-for-business",
-    tags: ["Claude AI", "Anthropic"],
-    featured: false,
-  },
-];
+// Always render fresh so admin edits show without a redeploy.
+export const dynamic = "force-dynamic";
 
+type PostCard = {
+  category: string;
+  date: string;
+  readTime: string;
+  title: string;
+  excerpt: string;
+  href: string;
+  tags: string[];
+  featured: boolean;
+  imageUrl?: string | null;
+};
+
+const blogDateFmt = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
+// Published posts from Supabase; falls back to the static list below if the
+// table is empty/unconfigured so the page never breaks.
+async function getPosts(): Promise<PostCard[]> {
+  try {
+    const supabase = createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from("blog_posts")
+      .select(BLOG_COLUMNS)
+      .eq("published", true)
+      .order("published_at", { ascending: false });
+
+    if (error || !data || data.length === 0) return fallbackCards;
+
+    return (data as BlogRow[]).map((row) => {
+      const p = rowToPost(row);
+      return {
+        category: p.category,
+        date: blogDateFmt.format(new Date(p.publishedAt)),
+        readTime: p.readTime,
+        title: p.title,
+        excerpt: p.excerpt,
+        href: `/blog/${p.slug}`,
+        tags: p.tags,
+        featured: p.featured,
+        imageUrl: p.imageUrl,
+      };
+    });
+  } catch {
+    return fallbackCards;
+  }
+}
+
+// Static posts mapped to the card shape (shared with /blog/[slug]).
+const fallbackCards: PostCard[] = staticPosts.map((p) => ({
+  category: p.category,
+  date: p.date,
+  readTime: p.readTime,
+  title: p.title,
+  excerpt: p.excerpt,
+  href: `/blog/${p.slug}`,
+  tags: p.tags,
+  featured: p.featured,
+  imageUrl: p.imageUrl ?? null,
+}));
 
 const tagColors: Record<string, { bg: string; text: string; border: string }> = {
   "GoHighLevel": { bg: "#073B34", text: "#0ABFA3", border: "#0ABFA3" },
@@ -93,7 +92,8 @@ const tagColors: Record<string, { bg: string; text: string; border: string }> = 
   "Operations": { bg: "#062B26", text: "#0ABFA3", border: "#155E53" },
 };
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const posts = await getPosts();
   const featured = posts.find((p) => p.featured);
   const rest = posts.filter((p) => !p.featured);
 
@@ -135,6 +135,14 @@ export default function BlogPage() {
                   href={featured.href}
                   className="group bg-[#101113] rounded-card border border-border p-8 flex flex-col md:flex-row gap-8 hover:border-primary hover:shadow-card transition-all duration-200 block"
                 >
+                  {featured.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={featured.imageUrl}
+                      alt=""
+                      className="h-48 w-full rounded-lg object-cover md:h-auto md:w-72 md:shrink-0"
+                    />
+                  )}
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-4">
                       <span
@@ -189,6 +197,14 @@ export default function BlogPage() {
                   href={post.href}
                   className="group bg-[#101113] rounded-card border border-border p-6 flex flex-col hover:border-primary hover:shadow-card transition-all duration-200"
                 >
+                  {post.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={post.imageUrl}
+                      alt=""
+                      className="mb-4 h-40 w-full rounded-lg object-cover"
+                    />
+                  )}
                   <div className="flex flex-wrap items-center gap-2 mb-4">
                     <span
                       className="text-[11px] font-dm font-semibold px-2.5 py-0.5 rounded-full border"

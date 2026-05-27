@@ -96,3 +96,46 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Rotating green "comet" light around a card border on hover */
+@property --akt-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes akt-border-spin {
+  to {
+    --akt-angle: 360deg;
+  }
+}
+
+.glow-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px; /* ring thickness */
+  background: conic-gradient(
+    from var(--akt-angle),
+    rgba(10, 191, 163, 0) 0deg,
+    rgba(10, 191, 163, 0) 250deg,
+    rgba(10, 191, 163, 0.55) 310deg,
+    #7fffe6 350deg,
+    rgba(10, 191, 163, 0) 360deg
+  );
+  /* show only the border ring */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.glow-card:hover::before {
+  opacity: 1;
+  animation: akt-border-spin 2.4s linear infinite;
+}

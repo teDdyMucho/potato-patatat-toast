@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { logToolUsage } from "@/lib/usage";
 
 const toolPrompts: Record<string, string> = {
   "Lead Qualifier":
@@ -57,6 +58,8 @@ export async function POST(req: NextRequest) {
 
     const result =
       completion.choices[0]?.message?.content || "No response generated. Please try again.";
+
+    await logToolUsage(typeof tool === "string" ? tool : "AI Tool");
 
     return NextResponse.json({ result });
   } catch (error) {
