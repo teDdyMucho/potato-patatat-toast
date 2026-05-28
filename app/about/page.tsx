@@ -1,7 +1,7 @@
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import { Akt3DLogo } from "@/components/ui/akt-3d-logo";
-import ProcessSteps from "@/components/about/ProcessSteps";
+import ProcessSteps, { ProcessPhotoCard } from "@/components/about/ProcessSteps";
 import {
   ArrowUpRight,
   Award,
@@ -376,7 +376,14 @@ export default function AboutPage() {
             >
               How AKT builds your AI system.
             </h2>
-            <ProcessSteps />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+              {/* Left — process steps */}
+              <ProcessSteps />
+
+              {/* Right — founder photo, vertically centered against all steps */}
+              <ProcessPhotoCard />
+            </div>
           </div>
         </section>
 

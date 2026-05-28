@@ -69,12 +69,18 @@ export default function GhlAffiliate() {
           animate={{ opacity: [0.55, 0.25, 0.55], scale: [1, 1.08, 1] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/image/GHL.png"
-          alt="GoHighLevel"
-          className="relative h-28 w-auto drop-shadow-[0_0_22px_rgba(10,191,163,0.5)] xl:h-32"
-        />
+        {/* GHL image with dark-teal tint overlay */}
+        <span className="relative block overflow-hidden rounded-xl">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/image/GHL.png"
+            alt="GoHighLevel"
+            className="relative block h-28 w-auto drop-shadow-[0_0_22px_rgba(10,191,163,0.5)] xl:h-32"
+            style={{ filter: "brightness(0.78) hue-rotate(-30deg) saturate(1.4)" }}
+          />
+          {/* teal colour wash */}
+          <span className="pointer-events-none absolute inset-0 rounded-xl bg-[#0ABFA3]/20 mix-blend-color" />
+        </span>
         {/* external-link cue */}
         <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#0ABFA3] text-white shadow-[0_0_10px_rgba(10,191,163,0.7)]">
           <ArrowUpRight size={13} strokeWidth={2.5} />

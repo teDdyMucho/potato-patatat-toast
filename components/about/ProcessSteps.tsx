@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion, type Variants } from "framer-motion";
 
 const steps = [
@@ -112,6 +113,57 @@ export default function ProcessSteps() {
         </motion.div>
       ))}
     </div>
+  );
+}
+
+/** Founder photo card — same HUD panel style as the process step cards. */
+export function ProcessPhotoCard() {
+  return (
+    <motion.div
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, amount: 0.25 }}
+      variants={cardVariants}
+      className="relative overflow-hidden rounded-card border border-[#155E53]/40 bg-[#0b0d10]/80 p-3 shadow-[0_0_40px_rgba(10,191,163,0.05)] backdrop-blur-sm"
+    >
+      <Corners />
+
+      {/* sweeping scan bar */}
+      <motion.div
+        aria-hidden
+        variants={sweepVariants}
+        className="pointer-events-none absolute inset-y-0 left-0 w-32 -skew-x-12 bg-gradient-to-r from-transparent via-[#0ABFA3]/25 to-transparent"
+      />
+
+      {/* pulsing corner glow */}
+      <motion.span
+        aria-hidden
+        className="pointer-events-none absolute -bottom-8 -right-8 h-40 w-40 rounded-full bg-[#0ABFA3]/15 blur-2xl"
+        animate={{ opacity: [0.6, 0.2, 0.6], scale: [1, 1.15, 1] }}
+        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      {/* photo */}
+      <motion.div variants={textVariants} className="relative overflow-hidden rounded-lg">
+        <Image
+          src="/image/bossgelomapagmahal.png"
+          alt="Jose Angelo Tapang — CEO & Founder, AKT Virtual Assistance Services"
+          width={600}
+          height={750}
+          className="h-auto w-full object-cover"
+          priority
+        />
+        {/* bottom name badge */}
+        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-5 pt-10 pb-4">
+          <p className="font-syne text-[15px] font-bold text-white" style={{ letterSpacing: "-0.01em" }}>
+            Jose Angelo Tapang
+          </p>
+          <p className="text-[11px] font-dm font-semibold uppercase tracking-[0.18em] text-[#0ABFA3]">
+            CEO &amp; Founder
+          </p>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

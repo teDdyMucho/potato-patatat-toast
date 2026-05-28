@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   Newspaper,
+  Settings,
   ShieldCheck,
   UserRound,
   X,
@@ -165,14 +166,16 @@ export default function Nav() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Try GoHighLevel now"
-              className="ghl-pulse block shrink-0 rounded-lg transition-transform active:scale-95 lg:hidden"
+              className="ghl-pulse relative block shrink-0 overflow-hidden rounded-lg transition-transform active:scale-95 lg:hidden"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/image/GHL.png"
                 alt="GoHighLevel"
                 className="block h-9 w-auto rounded-lg"
+                style={{ filter: "brightness(0.78) hue-rotate(-30deg) saturate(1.4)" }}
               />
+              <span className="pointer-events-none absolute inset-0 rounded-lg bg-[#0ABFA3]/20 mix-blend-color" />
             </a>
           )}
 
@@ -221,6 +224,14 @@ export default function Nav() {
                       <p className="truncate text-sm font-semibold text-white">{user.name}</p>
                       <p className="truncate text-xs text-white/50">{user.email}</p>
                     </div>
+                    <Link
+                      href="/account"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+                    >
+                      <Settings size={15} />
+                      Manage Account
+                    </Link>
                     <button
                       onClick={() => {
                         setUserMenuOpen(false);
@@ -305,21 +316,33 @@ export default function Nav() {
             )}
             {ready &&
               (user ? (
-                <button
-                  onClick={() => {
-                    logout();
-                    setOpen(false);
-                  }}
-                  className="flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-[15px] font-semibold text-white/60 transition-colors hover:bg-white/5 hover:text-white"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-white/45">
-                    <LogOut size={18} strokeWidth={2} aria-hidden="true" />
-                  </span>
-                  Log out
-                  <span className="ml-auto truncate text-xs font-medium text-white/35">
-                    {user.name.split(" ")[0]}
-                  </span>
-                </button>
+                <>
+                  <Link
+                    href="/account"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-[15px] font-semibold text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-white/45">
+                      <Settings size={18} strokeWidth={2} aria-hidden="true" />
+                    </span>
+                    Manage Account
+                  </Link>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setOpen(false);
+                    }}
+                    className="flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-[15px] font-semibold text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-white/45">
+                      <LogOut size={18} strokeWidth={2} aria-hidden="true" />
+                    </span>
+                    Log out
+                    <span className="ml-auto truncate text-xs font-medium text-white/35">
+                      {user.name.split(" ")[0]}
+                    </span>
+                  </button>
+                </>
               ) : (
                 <Link
                   href="/login"
