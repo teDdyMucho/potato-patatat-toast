@@ -102,8 +102,42 @@ export default function Home() {
     }
   };
 
+  const homepageJsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://aktservices.org/#organization",
+        name: "AKT Virtual Assistance Services",
+        url: "https://aktservices.org",
+        logo: "https://aktservices.org/image/akt_logo.png",
+        foundingDate: "2020",
+        email: "admin@aktservices.org",
+        areaServed: "Worldwide",
+        description: "Philippine-based AI automation agency specializing in GoHighLevel CRM, n8n workflow automation, Retell AI voice agents, and Filipino virtual assistants.",
+        sameAs: [
+          "https://linkedin.com/in/jatakt",
+          "https://www.facebook.com/profile.php?id=100075861475134",
+        ],
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://aktservices.org/#website",
+        url: "https://aktservices.org",
+        name: "AKT Virtual Assistance Services",
+        publisher: { "@id": "https://aktservices.org/#organization" },
+        potentialAction: {
+          "@type": "SearchAction",
+          target: "https://aktservices.org/blog?q={search_term_string}",
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ],
+  };
+
   return (
     <main className="relative min-h-screen min-h-[100dvh] overflow-hidden bg-black text-white">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageJsonLd) }} />
       <style>{`
         @keyframes marquee {
           from { transform: translateX(0); }

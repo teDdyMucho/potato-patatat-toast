@@ -81,7 +81,18 @@ export async function generateMetadata({
   return {
     title: `${article.title} | AKT Blog`,
     description: article.excerpt,
+    keywords: article.tags.length ? article.tags : undefined,
+    alternates: { canonical: `https://aktservices.org/blog/${params.slug}` },
     openGraph: {
+      title: article.title,
+      description: article.excerpt,
+      url: `https://aktservices.org/blog/${params.slug}`,
+      siteName: "AKT Virtual Assistance Services",
+      type: "article",
+      images: article.imageUrl ? [{ url: article.imageUrl, alt: article.title }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
       title: article.title,
       description: article.excerpt,
       images: article.imageUrl ? [article.imageUrl] : undefined,
@@ -102,8 +113,22 @@ export default async function BlogPostPage({
     .map((p) => p.trim())
     .filter(Boolean);
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.excerpt,
+    image: article.imageUrl ?? undefined,
+    datePublished: article.date,
+    author: { "@type": "Organization", name: "AKT Virtual Assistance Services", url: "https://aktservices.org" },
+    publisher: { "@type": "Organization", name: "AKT Virtual Assistance Services", url: "https://aktservices.org" },
+    mainEntityOfPage: { "@type": "WebPage", "@id": `https://aktservices.org/blog/${params.slug}` },
+    keywords: article.tags.join(", "),
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <Nav />
       <main className="pt-16">
         {/* Header */}

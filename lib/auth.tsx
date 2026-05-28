@@ -24,6 +24,7 @@ import type { SupabaseClient, User as SupabaseUser } from "@supabase/supabase-js
  */
 
 export type User = {
+  id: string;
   name: string;
   email: string;
 };
@@ -55,7 +56,7 @@ function toUser(u: SupabaseUser | null | undefined): User | null {
     (meta.full_name as string) ||
     (meta.name as string) ||
     (u.email ? u.email.split("@")[0] : "there");
-  return { name, email: u.email ?? "" };
+  return { id: u.id, name, email: u.email ?? "" };
 }
 
 function makeClient(): SupabaseClient | null {

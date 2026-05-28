@@ -7,21 +7,27 @@ export const dynamic = "force-dynamic";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const cap = (s: unknown, n: number) => (typeof s === "string" ? s.trim().slice(0, n) : "");
 
+const WEBHOOK_URL =
+  "https://primary-production-6722.up.railway.app/webhook/ghl-savecontact-aktservices-bookconsultation";
+
 /**
- * POST /api/leads — PUBLIC. Persists a contact-form / "Book Call" submission to
- * `public.leads` (service-role). Validates required fields; everything else is
- * optional and length-capped.
+ * POST /api/leads — PUBLIC.
+ * 1. Validates required fields.
+ * 2. Saves the lead to public.leads via the save_lead() Supabase function.
+ * 3. Fires the GHL webhook (non-blocking — webhook failure never blocks the user).
  */
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
 
-  const name = cap(body.name, 200);
-  const email = cap(body.email, 200);
-  const message = cap(body.message, 5000);
+  const firstName = cap(body.firstName, 100);
+  const lastName  = cap(body.lastName, 100);
+  const name      = `${firstName} ${lastName}`.trim() || cap(body.name, 200);
+  const email     = cap(body.email, 200);
+  const message   = cap(body.message, 5000);
 
-  if (!name || !email || !message) {
+  if (!firstName || !email || !message) {
     return NextResponse.json(
-      { error: "Name, email, and message are required." },
+      { error: "First name, email, and message are required." },
       { status: 400 },
     );
   }
@@ -29,24 +35,75 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please enter a valid email." }, { status: 400 });
   }
 
+  const company     = cap(body.company, 200) || null;
+  const phone       = cap(body.phone, 60)    || null;
+  const need        = cap(body.need, 120)    || null;
+  const contactTime = cap(body.contactTime, 200) || null;
+  const userId      = typeof body.userId === "string" && body.userId ? body.userId : null;
+
+  let leadId: string | null = null;
+
+  // ── 1. Save to Supabase via save_lead() function ──────────────────────────
   try {
     const admin = createSupabaseAdminClient();
-    const { error } = await admin.from("leads").insert({
-      name,
-      email,
-      message,
-      company: cap(body.company, 200) || null,
-      phone: cap(body.phone, 60) || null,
-      need: cap(body.need, 120) || null,
-      contact_time: cap(body.contactTime, 200) || null,
+
+    const { data, error } = await admin.rpc("save_lead", {
+      p_first_name:   firstName,
+      p_last_name:    lastName,
+      p_email:        email,
+      p_message:      message,
+      p_company:      company,
+      p_phone:        phone,
+      p_need:         need,
+      p_contact_time: contactTime,
+      p_user_id:      userId,
+      p_source:       "contact_form",
     });
+
     if (error) {
-      console.error("lead insert error:", error.message);
-      return NextResponse.json({ error: "Couldn't save your message." }, { status: 500 });
+      console.warn("save_lead RPC failed, falling back to direct insert:", error.message);
+      const { error: insertError } = await admin.from("leads").insert({
+        name, first_name: firstName, last_name: lastName,
+        email, message, company, phone, need,
+        contact_time: contactTime,
+        user_id: userId,
+        source: "contact_form",
+      });
+      if (insertError) {
+        console.error("lead insert error:", insertError.message);
+        return NextResponse.json({ error: "Couldn't save your message." }, { status: 500 });
+      }
+    } else {
+      leadId = data as string;
     }
-    return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("lead submit error (is SUPABASE_SERVICE_ROLE_KEY set?):", err);
+    console.error("lead submit error:", err);
     return NextResponse.json({ error: "Couldn't save your message." }, { status: 500 });
   }
+
+  // ── 2. Fire GHL webhook (non-blocking) ────────────────────────────────────
+  const webhookPayload = {
+    lead_id:      leadId,
+    user_id:      userId,
+    first_name:   firstName,
+    last_name:    lastName,
+    name,
+    email,
+    phone,
+    company,
+    need,
+    message,
+    contact_time: contactTime,
+    source:       "contact_form",
+    site:         "aktservices.org",
+    submitted_at: new Date().toISOString(),
+  };
+
+  fetch(WEBHOOK_URL, {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify(webhookPayload),
+  }).catch((err) => console.error("GHL webhook error:", err.message));
+
+  return NextResponse.json({ ok: true, lead_id: leadId });
 }

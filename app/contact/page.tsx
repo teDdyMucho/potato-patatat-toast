@@ -3,17 +3,20 @@
 import { useState } from "react";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/lib/auth";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowUpRight,
   Mail,
   MapPin,
   Clock,
   CheckCircle,
   ExternalLink,
   Share2,
+  Send,
+  Loader2,
 } from "lucide-react";
 
-const needs = [
+const needOptions = [
   "Virtual Assistants",
   "AI Infrastructure",
   "GoHighLevel Setup",
@@ -26,18 +29,39 @@ const needs = [
 ];
 
 export default function ContactPage() {
+  const { user } = useAuth();
   const [form, setForm] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     company: "",
     email: "",
     phone: "",
-    need: "",
     message: "",
-    contactTime: "",
   });
+  const [needs, setNeeds] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
+
+  const bookingUrl = (() => {
+    const base = "https://api.leadconnectorhq.com/widget/booking/rBZBds2Y2BtTaXMDeEk7";
+    const params = new URLSearchParams();
+    if (form.firstName) params.set("first_name", form.firstName.trim());
+    if (form.lastName)  params.set("last_name",  form.lastName.trim());
+    if (form.email)     params.set("email",       form.email.trim());
+    // GHL booking widget phone autofill — strip spaces/dashes, keep leading +
+    const cleanPhone = form.phone.trim().replace(/[\s\-().]/g, "");
+    if (cleanPhone)     params.set("phone",       cleanPhone);
+    const qs = params.toString();
+    return qs ? `${base}?${qs}` : base;
+  })();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const toggleNeed = (need: string) => {
+    setNeeds((prev) =>
+      prev.includes(need) ? prev.filter((n) => n !== need) : [...prev, need],
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,11 +71,21 @@ export default function ContactPage() {
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          firstName: form.firstName,
+          lastName:  form.lastName,
+          company:   form.company,
+          email:     form.email,
+          phone:     form.phone,
+          message:   form.message,
+          need:      needs.join(", "),
+          userId:    user?.id ?? null,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "Something went wrong.");
       setSubmitted(true);
+      setBookingOpen(true);
     } catch (err) {
       setError(
         err instanceof Error
@@ -216,16 +250,25 @@ export default function ContactPage() {
                     >
                       <CheckCircle size={28} style={{ color: "#0ABFA3" }} strokeWidth={2} />
                     </div>
-                    <h2
-                      className="font-syne text-body text-[22px] font-bold mb-3"
-                      style={{ letterSpacing: "-0.01em" }}
-                    >
+                    <h2 className="font-syne text-body text-[22px] font-bold mb-2" style={{ letterSpacing: "-0.01em" }}>
                       Message sent!
                     </h2>
-                    <p className="text-[15px] font-dm text-muted max-w-sm mx-auto">
-                      Thanks for reaching out. The AKT team will review your
-                      inquiry and get back to you within 24 hours.
+                    <p className="text-[15px] font-dm text-muted mb-6 max-w-sm mx-auto">
+                      Thanks! Book your free 30-min strategy call below — pick a time that works for you.
                     </p>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => setBookingOpen(true)}
+                      className="group relative inline-flex items-center gap-2 overflow-hidden rounded-xl px-7 py-3.5 text-[14px] font-dm font-bold text-white shadow-lg shadow-[#0abfa3]/20 transition-shadow hover:shadow-[#0abfa3]/40"
+                      style={{ background: "linear-gradient(135deg, #0ABFA3 0%, #089080 100%)" }}
+                    >
+                      <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
+                      <span className="relative flex items-center gap-2">
+                        <CheckCircle size={16} />
+                        Book a Strategy Call
+                      </span>
+                    </motion.button>
                   </div>
                 ) : (
                   <form
@@ -235,27 +278,30 @@ export default function ContactPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div>
                         <label className="block text-[12px] font-dm font-semibold text-muted uppercase tracking-wide mb-2">
-                          Full Name *
+                          First Name *
                         </label>
                         <input
                           type="text"
                           required
+                          autoComplete="given-name"
                           className="w-full border border-border bg-background rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder:text-muted/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors"
-                          placeholder="Your name"
-                          value={form.name}
-                          onChange={(e) => setForm({ ...form, name: e.target.value })}
+                          placeholder="First name"
+                          value={form.firstName}
+                          onChange={(e) => setForm({ ...form, firstName: e.target.value })}
                         />
                       </div>
                       <div>
                         <label className="block text-[12px] font-dm font-semibold text-muted uppercase tracking-wide mb-2">
-                          Company
+                          Last Name *
                         </label>
                         <input
                           type="text"
+                          required
+                          autoComplete="family-name"
                           className="w-full border border-border bg-background rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder:text-muted/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors"
-                          placeholder="Company name"
-                          value={form.company}
-                          onChange={(e) => setForm({ ...form, company: e.target.value })}
+                          placeholder="Last name"
+                          value={form.lastName}
+                          onChange={(e) => setForm({ ...form, lastName: e.target.value })}
                         />
                       </div>
                     </div>
@@ -280,6 +326,7 @@ export default function ContactPage() {
                         </label>
                         <input
                           type="tel"
+                          autoComplete="tel"
                           className="w-full border border-border bg-background rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder:text-muted/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors"
                           placeholder="+1 555 000 0000"
                           value={form.phone}
@@ -290,25 +337,67 @@ export default function ContactPage() {
 
                     <div>
                       <label className="block text-[12px] font-dm font-semibold text-muted uppercase tracking-wide mb-2">
-                        What Do You Need? *
+                        Company
+                      </label>
+                      <input
+                        type="text"
+                        autoComplete="organization"
+                        className="w-full border border-border bg-background rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder:text-muted/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors"
+                        placeholder="Company name (optional)"
+                        value={form.company}
+                        onChange={(e) => setForm({ ...form, company: e.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[12px] font-dm font-semibold text-muted uppercase tracking-wide mb-2">
+                        What Do You Need?{" "}
+                        <span className="normal-case text-[11px] text-muted/60 font-normal">(select all that apply)</span>
                       </label>
                       <div className="flex flex-wrap gap-2">
-                        {needs.map((need) => (
-                          <button
-                            key={need}
-                            type="button"
-                            onClick={() => setForm({ ...form, need })}
-                            className="px-3.5 py-1.5 rounded-full text-[12px] font-dm font-semibold transition-all duration-150 border"
-                            style={{
-                              background: form.need === need ? "#0ABFA3" : "transparent",
-                              color: form.need === need ? "white" : "#A1A1AA",
-                              borderColor: form.need === need ? "#0ABFA3" : "#2C2C2E",
-                            }}
-                          >
-                            {need}
-                          </button>
-                        ))}
+                        {needOptions.map((option) => {
+                          const selected = needs.includes(option);
+                          return (
+                            <motion.button
+                              key={option}
+                              type="button"
+                              onClick={() => toggleNeed(option)}
+                              whileTap={{ scale: 0.93 }}
+                              animate={{
+                                background: selected ? "#0ABFA3" : "transparent",
+                                borderColor: selected ? "#0ABFA3" : "#2C2C2E",
+                                color: selected ? "#ffffff" : "#A1A1AA",
+                              }}
+                              transition={{ duration: 0.15 }}
+                              className="relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-dm font-semibold border outline-none focus-visible:ring-2 focus-visible:ring-[#0ABFA3]/50"
+                            >
+                              <AnimatePresence>
+                                {selected && (
+                                  <motion.span
+                                    initial={{ scale: 0, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0, opacity: 0 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-white/25"
+                                  >
+                                    <CheckCircle size={10} strokeWidth={2.5} />
+                                  </motion.span>
+                                )}
+                              </AnimatePresence>
+                              {option}
+                            </motion.button>
+                          );
+                        })}
                       </div>
+                      {needs.length > 0 && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-2 text-[11px] font-dm text-[#0ABFA3]"
+                        >
+                          Selected: {needs.join(" · ")}
+                        </motion.p>
+                      )}
                     </div>
 
                     <div>
@@ -325,19 +414,6 @@ export default function ContactPage() {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-[12px] font-dm font-semibold text-muted uppercase tracking-wide mb-2">
-                        Preferred Contact Time
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full border border-border bg-background rounded-md px-4 py-3 text-[14px] font-dm text-body placeholder:text-muted/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors"
-                        placeholder="e.g. Weekdays 10am–2pm EST"
-                        value={form.contactTime}
-                        onChange={(e) => setForm({ ...form, contactTime: e.target.value })}
-                      />
-                    </div>
-
                     {error && (
                       <p
                         className="rounded-md border border-red-500/30 bg-red-500/10 px-4 py-3 text-[13px] font-dm text-red-300"
@@ -347,14 +423,30 @@ export default function ContactPage() {
                       </p>
                     )}
 
-                    <button
+                    <motion.button
                       type="submit"
                       disabled={submitting}
-                      className="w-full flex items-center justify-center gap-2 py-3.5 rounded-md text-[14px] font-dm font-semibold text-white bg-primary hover:bg-primary-hover transition-colors disabled:opacity-60"
+                      whileHover={{ scale: submitting ? 1 : 1.015 }}
+                      whileTap={{ scale: submitting ? 1 : 0.97 }}
+                      className="group relative w-full overflow-hidden rounded-xl py-4 text-[15px] font-dm font-bold text-white shadow-lg shadow-[#0abfa3]/20 transition-shadow hover:shadow-[#0abfa3]/40 disabled:opacity-60"
+                      style={{ background: "linear-gradient(135deg, #0ABFA3 0%, #089080 100%)" }}
                     >
-                      {submitting ? "Sending…" : "Send Message"}
-                      {!submitting && <ArrowUpRight size={16} />}
-                    </button>
+                      {/* shimmer sweep on hover */}
+                      <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
+                      <span className="relative flex items-center justify-center gap-2">
+                        {submitting ? (
+                          <>
+                            <Loader2 size={17} className="animate-spin" />
+                            Sending…
+                          </>
+                        ) : (
+                          <>
+                            <Send size={16} />
+                            Send Message
+                          </>
+                        )}
+                      </span>
+                    </motion.button>
 
                     <p className="text-[12px] font-dm text-muted text-center">
                       No spam. No commitment. We reply within 24 hours.
@@ -367,6 +459,69 @@ export default function ContactPage() {
         </section>
       </main>
       <Footer />
+
+      {/* ── Booking Modal ── */}
+      <AnimatePresence>
+        {bookingOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="booking-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
+              onClick={() => setBookingOpen(false)}
+            />
+
+            {/* Centering wrapper — pointer-events-none so backdrop click-to-close still works */}
+            <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+            {/* Modal panel */}
+            <motion.div
+              key="booking-panel"
+              initial={{ opacity: 0, scale: 0.93, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.93, y: 20 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="pointer-events-auto flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0c0c0e] shadow-2xl shadow-black/60"
+              style={{ maxHeight: "min(88vh, 760px)", height: "min(88vh, 760px)" }}
+            >
+              {/* Header */}
+              <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#062B26]">
+                    <CheckCircle size={18} style={{ color: "#0ABFA3" }} strokeWidth={2} />
+                  </div>
+                  <div>
+                    <p className="font-syne text-[15px] font-bold text-white">Book Your Free Strategy Call</p>
+                    <p className="text-[12px] font-dm text-muted">30 min · AKT Virtual Assistance Services</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setBookingOpen(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-white/50 transition-colors hover:bg-white/5 hover:text-white"
+                  aria-label="Close booking"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Calendar iframe */}
+              <div className="relative min-h-0 flex-1">
+                <iframe
+                  src={bookingUrl}
+                  title="Book a strategy call with AKT"
+                  className="h-full w-full border-0"
+                  loading="lazy"
+                  allow="camera; microphone; autoplay; encrypted-media"
+                />
+              </div>
+            </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }

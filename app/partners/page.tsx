@@ -6,9 +6,31 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Partners | AKT Virtual Assistance Services",
+  title: "Partner Case Studies | AI Automation Results Across 10 Industries — AKT",
   description:
-    "AKT partners — businesses we've worked with across real estate, finance, SaaS, and beyond.",
+    "See how AKT built AI automation systems for 10 partners across roofing, financial services, B2B distribution, real estate, crypto, and more. Real results, real clients.",
+  keywords: [
+    "AI automation case studies",
+    "GoHighLevel client results",
+    "virtual assistant agency portfolio",
+    "AI automation agency Philippines",
+    "n8n automation case study",
+    "GoHighLevel agency portfolio",
+  ],
+  openGraph: {
+    title: "Partner Case Studies | AI Automation Results Across 10 Industries — AKT",
+    description:
+      "Real AI automation results across roofing, finance, distribution, real estate, crypto, and more. 10 partners, 10 industries, 6 continents.",
+    url: "https://aktservices.org/partners",
+    siteName: "AKT Virtual Assistance Services",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Partner Case Studies | AKT",
+    description: "AI automation results across 10 industries — see what AKT built.",
+  },
+  alternates: { canonical: "https://aktservices.org/partners" },
 };
 
 export default function PartnersPage() {
