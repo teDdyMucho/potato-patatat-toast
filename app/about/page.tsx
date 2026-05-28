@@ -294,7 +294,7 @@ export default function AboutPage() {
                 />
                 <Akt3DLogo
                   fitSize={3.5}
-                  className="h-[300px] sm:h-[400px] lg:h-[480px] w-full max-w-[600px] cursor-grab touch-none active:cursor-grabbing"
+                  className="h-[300px] sm:h-[400px] lg:h-[480px] w-full max-w-[600px]"
                 />
               </div>
             </div>

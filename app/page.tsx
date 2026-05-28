@@ -156,7 +156,7 @@ export default function Home() {
       <GhlAffiliate />
 
       <div className="pointer-events-none absolute left-1/2 top-[34%] z-20 h-[min(46vw,46vh)] w-[min(46vw,46vh)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#0abfa3]/20 blur-3xl" />
-      <Akt3DLogo className="absolute left-1/2 top-[34%] z-30 h-[min(58vw,58vh)] w-[min(68vw,68vh)] -translate-x-1/2 -translate-y-1/2 cursor-grab touch-none active:cursor-grabbing" />
+      <Akt3DLogo className="absolute left-1/2 top-[34%] z-30 h-[min(58vw,58vh)] w-[min(68vw,68vh)] -translate-x-1/2 -translate-y-1/2" />
 
       {/* Card — closed: compact · open: chat panel */}
       <section

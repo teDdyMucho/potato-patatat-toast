@@ -149,7 +149,7 @@ export default function LoginPage() {
           <div className="relative z-10">
             <Akt3DLogo
               fitSize={3.9}
-              className="-ml-1 h-[190px] w-full max-w-[400px] cursor-grab touch-none active:cursor-grabbing sm:h-[230px]"
+              className="-ml-1 h-[190px] w-full max-w-[400px] sm:h-[230px]"
             />
             <p className="mt-2 text-[13px] font-dm font-semibold uppercase tracking-[0.3em] text-white/55">
               Virtual Assistance Services

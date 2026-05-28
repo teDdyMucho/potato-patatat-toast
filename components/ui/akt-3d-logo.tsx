@@ -49,30 +49,11 @@ export function Akt3DLogo({
       }
       const logoGroup = new THREE.Group();
       const loader = new GLTFLoader();
-    const maxYaw = Math.PI / 9;
+    const maxYaw   = Math.PI / 9;
     const maxPitch = Math.PI / 12;
-    const clampRotation = () => {
-      logoGroup.rotation.y = THREE.MathUtils.clamp(
-        logoGroup.rotation.y,
-        -maxYaw,
-        maxYaw,
-      );
-      logoGroup.rotation.x = THREE.MathUtils.clamp(
-        logoGroup.rotation.x,
-        -maxPitch,
-        maxPitch,
-      );
-    };
-    const randomSpeed = (min: number, max: number) =>
-      min + Math.random() * (max - min);
-    const pointer = {
-      active: false,
-      previousX: 0,
-      previousY: 0,
-      velocityX: 0.0011,
-      velocityY: 0.00028,
-      randomDrift: 0.00018,
-    };
+    // Target rotation angles driven by global mouse / touch position.
+    const target = { y: 0, x: 0 };
+    const LERP = 0.06; // smoothing — lower = lazier follow
       let frame = 0;
       let disposed = false;
 
@@ -174,62 +155,31 @@ export function Akt3DLogo({
       renderer.setSize(width, height, false);
     };
 
-    const handlePointerDown = (event: PointerEvent) => {
-      pointer.active = true;
-      pointer.previousX = event.clientX;
-      pointer.previousY = event.clientY;
-      renderer.domElement.setPointerCapture(event.pointerId);
+    // Global mouse tracking — maps cursor position to target rotation angles.
+    const handleMouseMove = (e: MouseEvent) => {
+      // Normalise to -1…+1 relative to the viewport center.
+      const nx = (e.clientX / window.innerWidth) * 2 - 1;
+      const ny = (e.clientY / window.innerHeight) * 2 - 1;
+      target.y = nx * maxYaw;
+      target.x = ny * maxPitch * 0.6; // slightly less tilt up/down
     };
 
-    const handlePointerMove = (event: PointerEvent) => {
-      if (!pointer.active) return;
-
-      const deltaX = event.clientX - pointer.previousX;
-      const deltaY = event.clientY - pointer.previousY;
-
-      pointer.velocityX = deltaX * 0.004;
-      pointer.velocityY = deltaY * 0.003;
-      logoGroup.rotation.y += deltaX * 0.007;
-      logoGroup.rotation.x += deltaY * 0.005;
-      clampRotation();
-
-      pointer.previousX = event.clientX;
-      pointer.previousY = event.clientY;
+    // Touch tracking — same idea for mobile.
+    const handleTouchMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (!t) return;
+      const nx = (t.clientX / window.innerWidth) * 2 - 1;
+      const ny = (t.clientY / window.innerHeight) * 2 - 1;
+      target.y = nx * maxYaw;
+      target.x = ny * maxPitch * 0.6;
     };
 
-    const handlePointerUp = (event: PointerEvent) => {
-      pointer.active = false;
-
-      if (renderer.domElement.hasPointerCapture(event.pointerId)) {
-        renderer.domElement.releasePointerCapture(event.pointerId);
-      }
-    };
 
     const animate = () => {
-      const driftX = Math.sin(performance.now() * 0.00017) * pointer.randomDrift;
-      const driftY = Math.cos(performance.now() * 0.00013) * pointer.randomDrift;
-
-      if (!pointer.active) {
-        logoGroup.rotation.y += pointer.velocityX + driftX;
-        logoGroup.rotation.x += pointer.velocityY + driftY;
-
-        if (logoGroup.rotation.y >= maxYaw) {
-          logoGroup.rotation.y = maxYaw;
-          pointer.velocityX = -randomSpeed(0.00065, 0.00135);
-        } else if (logoGroup.rotation.y <= -maxYaw) {
-          logoGroup.rotation.y = -maxYaw;
-          pointer.velocityX = randomSpeed(0.00065, 0.00135);
-        }
-
-        if (logoGroup.rotation.x >= maxPitch) {
-          logoGroup.rotation.x = maxPitch;
-          pointer.velocityY = -randomSpeed(0.00012, 0.00032);
-        } else if (logoGroup.rotation.x <= -maxPitch) {
-          logoGroup.rotation.x = -maxPitch;
-          pointer.velocityY = randomSpeed(0.00012, 0.00032);
-        }
-      }
-
+      // Smooth lerp toward the target (mouse/touch-driven) position.
+      logoGroup.rotation.y += (target.y - logoGroup.rotation.y) * LERP;
+      logoGroup.rotation.x += (target.x - logoGroup.rotation.x) * LERP;
+      // Gentle Z bob regardless.
       logoGroup.rotation.z = Math.sin(performance.now() * 0.00011) * 0.035;
       renderer.render(scene, camera);
       frame = requestAnimationFrame(animate);
@@ -237,20 +187,16 @@ export function Akt3DLogo({
 
     resize();
     window.addEventListener("resize", resize);
-    renderer.domElement.addEventListener("pointerdown", handlePointerDown);
-    renderer.domElement.addEventListener("pointermove", handlePointerMove);
-    renderer.domElement.addEventListener("pointerup", handlePointerUp);
-    renderer.domElement.addEventListener("pointercancel", handlePointerUp);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
       animate();
 
       cleanup = () => {
         disposed = true;
         cancelAnimationFrame(frame);
         window.removeEventListener("resize", resize);
-        renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
-        renderer.domElement.removeEventListener("pointermove", handlePointerMove);
-        renderer.domElement.removeEventListener("pointerup", handlePointerUp);
-        renderer.domElement.removeEventListener("pointercancel", handlePointerUp);
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("touchmove", handleTouchMove);
 
         scene.traverse((object) => {
           if (!(object instanceof THREE.Mesh)) return;
