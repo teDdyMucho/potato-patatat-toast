@@ -6,7 +6,6 @@ import type { Metadata } from "next";
 import { ArrowLeft, Calendar, Clock } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BLOG_COLUMNS, rowToPost, type BlogRow } from "@/lib/blog";
-import { getFallbackPost } from "@/lib/blog-fallback";
 
 export const dynamic = "force-dynamic";
 
@@ -52,21 +51,7 @@ async function getArticle(slug: string): Promise<Article | null> {
       };
     }
   } catch {
-    // fall through to static
-  }
-
-  const fb = getFallbackPost(slug);
-  if (fb) {
-    return {
-      title: fb.title,
-      excerpt: fb.excerpt,
-      content: fb.content ?? "",
-      category: fb.category,
-      tags: fb.tags,
-      readTime: fb.readTime,
-      date: fb.date,
-      imageUrl: fb.imageUrl ?? null,
-    };
+    // fall through
   }
   return null;
 }

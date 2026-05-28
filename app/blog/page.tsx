@@ -5,7 +5,6 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BLOG_COLUMNS, rowToPost, type BlogRow } from "@/lib/blog";
-import { fallbackPosts as staticPosts } from "@/lib/blog-fallback";
 
 export const metadata: Metadata = {
   title: "Blog | AKT Virtual Assistance Services — AI, VA & Business Growth",
@@ -34,8 +33,7 @@ const blogDateFmt = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 
-// Published posts from Supabase; falls back to the static list below if the
-// table is empty/unconfigured so the page never breaks.
+// Fetch only real published posts from Supabase. Returns [] when empty.
 async function getPosts(): Promise<PostCard[]> {
   try {
     const supabase = createSupabaseServerClient();
@@ -45,7 +43,7 @@ async function getPosts(): Promise<PostCard[]> {
       .eq("published", true)
       .order("published_at", { ascending: false });
 
-    if (error || !data || data.length === 0) return fallbackCards;
+    if (error || !data || data.length === 0) return [];
 
     return (data as BlogRow[]).map((row) => {
       const p = rowToPost(row);
@@ -62,22 +60,9 @@ async function getPosts(): Promise<PostCard[]> {
       };
     });
   } catch {
-    return fallbackCards;
+    return [];
   }
 }
-
-// Static posts mapped to the card shape (shared with /blog/[slug]).
-const fallbackCards: PostCard[] = staticPosts.map((p) => ({
-  category: p.category,
-  date: p.date,
-  readTime: p.readTime,
-  title: p.title,
-  excerpt: p.excerpt,
-  href: `/blog/${p.slug}`,
-  tags: p.tags,
-  featured: p.featured,
-  imageUrl: p.imageUrl ?? null,
-}));
 
 const tagColors: Record<string, { bg: string; text: string; border: string }> = {
   "GoHighLevel": { bg: "#073B34", text: "#0ABFA3", border: "#0ABFA3" },
@@ -125,6 +110,24 @@ export default async function BlogPage() {
 
         <section className="py-16 bg-black">
           <div className="max-w-7xl mx-auto px-6">
+
+            {/* Empty state — no published posts yet */}
+            {posts.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-[#101113]">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0ABFA3" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                  </svg>
+                </div>
+                <h2 className="font-syne text-body text-[22px] font-bold mb-2" style={{ letterSpacing: "-0.01em" }}>
+                  No posts yet
+                </h2>
+                <p className="font-dm text-muted text-[15px] max-w-sm">
+                  Blog posts published in the admin will appear here. Check back soon.
+                </p>
+              </div>
+            )}
+
             {/* Featured post */}
             {featured && (
               <div className="mb-12">
