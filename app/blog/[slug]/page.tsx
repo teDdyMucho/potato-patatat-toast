@@ -98,6 +98,72 @@ export default async function BlogPostPage({
     .map((p) => p.trim())
     .filter(Boolean);
 
+  function renderBlock(block: string, i: number) {
+    // --- → green divider line
+    if (/^-{3,}$/.test(block)) {
+      return <hr key={i} className="border-0 h-px bg-[#0ABFA3]/40 my-2" />;
+    }
+    // # Heading → bold display heading
+    if (block.startsWith("#")) {
+      const level = block.match(/^(#+)/)?.[1].length ?? 1;
+      const text = block.replace(/^#+\s*/, "");
+      const sizeMap: Record<number, string> = {
+        1: "clamp(24px, 3vw, 32px)",
+        2: "clamp(20px, 2.5vw, 26px)",
+        3: "clamp(17px, 2vw, 22px)",
+      };
+      return (
+        <p
+          key={i}
+          className="font-syne font-bold text-white mt-8 mb-2"
+          style={{ fontSize: sizeMap[Math.min(level, 3)], letterSpacing: "-0.02em", lineHeight: 1.2 }}
+        >
+          {text}
+        </p>
+      );
+    }
+    // Block of * bullet lines → green bullet list
+    if (block.split("\n").every((line) => line.trimStart().startsWith("*"))) {
+      const lines = block.split("\n").map((l) => l.replace(/^\s*\*\s*/, "").trim()).filter(Boolean);
+      return (
+        <ul key={i} className="space-y-2 my-1">
+          {lines.map((line, j) => (
+            <li key={j} className="flex items-start gap-2.5 text-[16px] font-dm leading-[1.8] text-body/90">
+              <span className="mt-[6px] h-2 w-2 shrink-0 rounded-full bg-[#0ABFA3] shadow-[0_0_6px_rgba(10,191,163,0.7)]" />
+              {line}
+            </li>
+          ))}
+        </ul>
+      );
+    }
+    // Mixed block — some lines may start with * inside a paragraph
+    const lines = block.split("\n");
+    if (lines.some((l) => l.trimStart().startsWith("*"))) {
+      return (
+        <div key={i} className="space-y-1.5">
+          {lines.map((line, j) => {
+            const isBullet = line.trimStart().startsWith("*");
+            if (isBullet) {
+              return (
+                <div key={j} className="flex items-start gap-2.5 text-[16px] font-dm leading-[1.8] text-body/90">
+                  <span className="mt-[6px] h-2 w-2 shrink-0 rounded-full bg-[#0ABFA3] shadow-[0_0_6px_rgba(10,191,163,0.7)]" />
+                  {line.replace(/^\s*\*\s*/, "").trim()}
+                </div>
+              );
+            }
+            return <p key={j} className="text-[16px] font-dm leading-[1.8] text-body/90">{line}</p>;
+          })}
+        </div>
+      );
+    }
+    // Default → plain paragraph
+    return (
+      <p key={i} className="whitespace-pre-wrap text-[16px] font-dm leading-[1.8] text-body/90">
+        {block}
+      </p>
+    );
+  }
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -174,11 +240,7 @@ export default async function BlogPostPage({
 
             {paragraphs.length > 0 ? (
               <div className="space-y-5">
-                {paragraphs.map((p, i) => (
-                  <p key={i} className="whitespace-pre-wrap text-[16px] font-dm leading-[1.8] text-body/90">
-                    {p}
-                  </p>
-                ))}
+                {paragraphs.map((block, i) => renderBlock(block, i))}
               </div>
             ) : (
               <p className="text-[15px] font-dm italic leading-relaxed text-muted">
