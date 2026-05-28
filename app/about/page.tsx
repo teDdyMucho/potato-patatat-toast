@@ -252,14 +252,14 @@ export default function AboutPage() {
                   About AKT
                 </p>
                 <h1
-                  className="font-syne text-body mb-6"
-                  style={{ fontSize: "clamp(36px, 5vw, 58px)", fontWeight: 800, letterSpacing: "-0.03em" }}
+                  className="heading-shimmer font-syne mb-6"
+                  style={{ fontSize: "clamp(42px, 6.5vw, 72px)", fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.05 }}
                 >
                   We connect tools.
                   <br />
                   We build AI systems.
                   <br />
-                  <span style={{ color: "#0ABFA3" }}>We make business easier.</span>
+                  We make business easier.
                 </h1>
                 <p className="font-dm text-muted leading-relaxed mb-4" style={{ fontSize: "17px" }}>
                   AKT Virtual Assistance Services is a Philippine-based AI automation agency. We integrate and connect the tools your business already uses — and the tools it needs — into one seamless, efficient workflow. We implement AI as an active part of your workforce: handling calls, qualifying leads, posting content, running analytics, and managing operations 24/7.
@@ -286,8 +286,8 @@ export default function AboutPage() {
                 </div>
               </div>
 
-              {/* Right — 3D model */}
-              <div className="relative flex items-center justify-center">
+              {/* Right — 3D model (hidden on mobile/tablet; only shown with the 2-col layout) */}
+              <div className="relative hidden items-center justify-center lg:flex">
                 <div
                   className="pointer-events-none absolute inset-0 rounded-full blur-3xl"
                   style={{ background: "radial-gradient(circle, rgba(10,191,163,0.18) 0%, transparent 70%)" }}
@@ -436,12 +436,30 @@ export default function AboutPage() {
             >
               Tools we build with.
             </h2>
-            <div className="flex flex-wrap gap-2.5">
+            {/* Mobile + tablet: continuous auto-scrolling carousel (like the homepage partner strip) */}
+            <div className="relative overflow-hidden lg:hidden [mask-image:linear-gradient(to_right,transparent,#000_5%,#000_95%,transparent)]">
+              <div className="marquee-x flex w-max items-center gap-2.5">
+                {[...techStack, ...techStack].map((tool, i) => (
+                  <span
+                    key={i}
+                    aria-hidden={i >= techStack.length ? true : undefined}
+                    className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-white/10 bg-gradient-to-b from-[#17191c] to-[#0c0d0f] px-3.5 py-2 text-[13px] font-dm font-semibold text-body shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
+                  >
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#0ABFA3] shadow-[0_0_6px_rgba(10,191,163,0.85)]" />
+                    {tool}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop: wrapped grid */}
+            <div className="hidden flex-wrap gap-2.5 lg:flex">
               {techStack.map((tool) => (
                 <span
                   key={tool}
-                  className="text-[13px] font-dm font-semibold px-4 py-2 rounded-full border border-white/10 bg-[#101113] text-body"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-gradient-to-b from-[#17191c] to-[#0c0d0f] px-3.5 py-2 text-[13px] font-dm font-semibold text-body shadow-[0_1px_2px_rgba(0,0,0,0.4)] transition-colors hover:border-[#0ABFA3]/50 hover:text-white"
                 >
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#0ABFA3] shadow-[0_0_6px_rgba(10,191,163,0.85)]" />
                   {tool}
                 </span>
               ))}

@@ -140,9 +140,9 @@ export default function LoginPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(10,191,163,0.12),transparent_60%)]" />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-start gap-16 lg:flex-row lg:items-center lg:justify-between lg:gap-20">
-        {/* Left — 3D AKT wordmark + why your business needs AKT */}
-        <div className="relative w-full lg:max-w-lg">
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center gap-16 lg:flex-row lg:items-center lg:justify-between lg:gap-20">
+        {/* Left — 3D AKT wordmark + why your business needs AKT (desktop only) */}
+        <div className="relative hidden w-full lg:block lg:max-w-lg">
           {/* ambient glow behind the wordmark */}
           <div className="pointer-events-none absolute -left-12 -top-8 h-[440px] w-[440px] rounded-full bg-[#0ABFA3]/20 blur-[140px]" />
 

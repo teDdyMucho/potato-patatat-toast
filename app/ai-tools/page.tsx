@@ -223,8 +223,8 @@ export default function AIToolsPage() {
           <div className="pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-[#0ABFA3]/10 blur-[160px]" />
 
           <div className="relative z-10 max-w-7xl mx-auto px-6">
-            {/* Filter */}
-            <div className="mb-10 flex flex-wrap gap-2.5">
+            {/* Filter — single swipeable row on mobile, wraps on larger screens */}
+            <div className="scrollbar-none -mx-6 mb-10 flex gap-2.5 overflow-x-auto px-6 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
               {categories.map((cat, i) => {
                 const isActive = active === cat;
                 return (
@@ -236,7 +236,7 @@ export default function AIToolsPage() {
                     transition={{ duration: 0.3, delay: i * 0.05, ease: "easeOut" }}
                     whileHover={{ scale: 1.06 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`relative rounded-full border px-4 py-2 text-[12px] font-dm font-semibold transition-colors duration-200 ${
+                    className={`relative shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-[12px] font-dm font-semibold transition-colors duration-200 ${
                       isActive
                         ? "border-transparent text-white"
                         : "border-border bg-white/[0.03] text-muted hover:border-[#0ABFA3]/50 hover:text-[#7fffee]"

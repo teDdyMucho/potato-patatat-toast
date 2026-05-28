@@ -26,7 +26,9 @@ const config: Config = {
         ring: "#0ABFA3",
       },
       fontFamily: {
-        syne: ["var(--font-syne)", "sans-serif"],
+        // `syne` is kept as an alias (used across the codebase) but now renders Space Grotesk.
+        syne: ["var(--font-space-grotesk)", "sans-serif"],
+        space: ["var(--font-space-grotesk)", "sans-serif"],
         dm: ["var(--font-dm-sans)", "sans-serif"],
       },
       spacing: {

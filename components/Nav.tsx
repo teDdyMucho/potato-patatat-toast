@@ -4,11 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  ArrowUpRight,
   Bot,
   BriefcaseBusiness,
   ChevronDown,
   Handshake,
   House,
+  LogIn,
   LogOut,
   Menu,
   Newspaper,
@@ -19,6 +21,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/lib/auth";
+import { GHL_URL } from "@/components/GhlAffiliate";
 
 const links = [
   { label: "Overview", href: "/", value: "home", icon: House },
@@ -44,6 +47,17 @@ function activeValue(pathname: string) {
   return "";
 }
 
+/** Friendly title shown in the mobile header center (homepage shows the GHL image instead). */
+function headerTitle(pathname: string): string | null {
+  if (pathname === "/") return null;
+  const match = links.find((link) => link.value === activeValue(pathname));
+  if (match) return match.label;
+  if (pathname.startsWith("/contact")) return "Contact";
+  if (pathname.startsWith("/login")) return "Log in";
+  if (pathname.startsWith("/admin")) return "Admin";
+  return null;
+}
+
 export default function Nav() {
   const pathname = usePathname();
   const { user, ready, isAdmin, logout } = useAuth();
@@ -53,6 +67,7 @@ export default function Nav() {
   const lastScrollY = useRef(0);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const current = activeValue(pathname);
+  const title = headerTitle(pathname);
 
   // Close the user dropdown when clicking outside it.
   useEffect(() => {
@@ -115,7 +130,8 @@ export default function Nav() {
           </span>
         </Link>
 
-        <Tabs value={current} className="hidden justify-self-center md:block">
+        <div className="flex min-w-0 items-center justify-self-center">
+          <Tabs value={current} className="hidden lg:block">
           <TabsList className="h-auto items-stretch gap-2 rounded-none bg-transparent p-0 lg:gap-5">
             {links.map((link) => {
               const Icon = link.icon;
@@ -140,13 +156,39 @@ export default function Nav() {
               );
             })}
           </TabsList>
-        </Tabs>
+          </Tabs>
 
-        <div className="flex items-center gap-3 justify-self-end">
+          {/* GoHighLevel affiliate image — homepage only, mobile/tablet, centered with a pulsing glow */}
+          {pathname === "/" && (
+            <a
+              href={GHL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Try GoHighLevel now"
+              className="ghl-pulse block shrink-0 rounded-lg transition-transform active:scale-95 lg:hidden"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/image/GHL.png"
+                alt="GoHighLevel"
+                className="block h-9 w-auto rounded-lg"
+              />
+            </a>
+          )}
+
+          {/* Current page title — non-homepage, mobile/tablet only */}
+          {title && (
+            <span className="truncate font-syne text-[15px] font-bold tracking-wide text-white lg:hidden">
+              {title}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 justify-self-end">
           {ready && isAdmin && (
             <Link
               href="/admin"
-              className="hidden items-center gap-1.5 rounded-md border border-[#0ABFA3]/40 px-3.5 py-2.5 text-sm font-semibold text-[#0ABFA3] transition-colors hover:bg-[#0ABFA3]/10 sm:inline-flex"
+              className="hidden items-center gap-1.5 rounded-md border border-[#0ABFA3]/40 px-3.5 py-2.5 text-sm font-semibold text-[#0ABFA3] transition-colors hover:bg-[#0ABFA3]/10 lg:inline-flex"
             >
               <ShieldCheck size={15} />
               Admin
@@ -154,7 +196,7 @@ export default function Nav() {
           )}
           {ready &&
             (user ? (
-              <div ref={userMenuRef} className="relative hidden sm:block">
+              <div ref={userMenuRef} className="relative hidden lg:block">
                 <button
                   onClick={() => setUserMenuOpen((o) => !o)}
                   aria-haspopup="menu"
@@ -195,13 +237,13 @@ export default function Nav() {
             ) : (
               <Link
                 href="/login"
-                className="hidden items-center gap-1.5 rounded-md border border-white/15 px-4 py-2.5 text-sm font-medium text-white/70 transition-colors hover:border-white/30 hover:text-white sm:inline-flex"
+                className="hidden items-center gap-1.5 rounded-md border border-white/15 px-4 py-2.5 text-sm font-medium text-white/70 transition-colors hover:border-white/30 hover:text-white lg:inline-flex"
               >
                 Log in
               </Link>
             ))}
           <button
-            className="rounded-md border border-white/15 p-2 text-white/70 transition-colors hover:text-white md:hidden"
+            className="rounded-md border border-white/15 p-2 text-white/70 transition-colors hover:text-white lg:hidden"
             onClick={() => setOpen((value) => !value)}
             aria-label="Toggle navigation"
           >
@@ -211,29 +253,53 @@ export default function Nav() {
       </nav>
 
       {open && (
-        <div className="border-t border-white/10 bg-[#1f1f22] px-5 py-4 md:hidden">
-          <div className="grid gap-2">
-            {links.map((link) => (
-              <Link
-                key={link.value}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                  current === link.value
-                    ? "bg-white/10 text-white"
-                    : "text-white/60 hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
+        <div className="animate-fade-in border-t border-white/10 bg-[#0c0c0e]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+20px)] pt-3 shadow-2xl shadow-black/60 backdrop-blur-md lg:hidden">
+          <nav className="grid gap-1.5">
+            {links.map((link) => {
+              const Icon = link.icon;
+              const active = current === link.value;
+              return (
+                <Link
+                  key={link.value}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  aria-current={active ? "page" : undefined}
+                  className={`group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-[15px] font-semibold transition-all ${
+                    active
+                      ? "border-[#0ABFA3]/40 bg-[#0ABFA3]/10 text-white"
+                      : "border-transparent text-white/60 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                      active
+                        ? "bg-[#0ABFA3]/20 text-[#0ABFA3]"
+                        : "bg-white/5 text-white/45 group-hover:text-white"
+                    }`}
+                  >
+                    <Icon size={18} strokeWidth={2} aria-hidden="true" />
+                  </span>
+                  {link.label}
+                  {active && (
+                    <span className="ml-auto h-2 w-2 rounded-full bg-[#0ABFA3] shadow-[0_0_8px_rgba(10,191,163,0.85)]" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="my-3 h-px bg-white/10" />
+
+          <div className="grid gap-1.5">
             {ready && isAdmin && (
               <Link
                 href="/admin"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-[#0ABFA3] transition-colors hover:bg-[#0ABFA3]/10"
+                className="flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-[15px] font-semibold text-[#0ABFA3] transition-colors hover:bg-[#0ABFA3]/10"
               >
-                <ShieldCheck size={15} />
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0ABFA3]/15 text-[#0ABFA3]">
+                  <ShieldCheck size={18} strokeWidth={2} aria-hidden="true" />
+                </span>
                 Admin
               </Link>
             )}
@@ -244,20 +310,38 @@ export default function Nav() {
                     logout();
                     setOpen(false);
                   }}
-                  className="rounded-md px-3 py-2 text-left text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                  className="flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-[15px] font-semibold text-white/60 transition-colors hover:bg-white/5 hover:text-white"
                 >
-                  Log out ({user.name.split(" ")[0]})
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-white/45">
+                    <LogOut size={18} strokeWidth={2} aria-hidden="true" />
+                  </span>
+                  Log out
+                  <span className="ml-auto truncate text-xs font-medium text-white/35">
+                    {user.name.split(" ")[0]}
+                  </span>
                 </button>
               ) : (
                 <Link
                   href="/login"
                   onClick={() => setOpen(false)}
-                  className="rounded-md px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                  className="flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-[15px] font-semibold text-white/60 transition-colors hover:bg-white/5 hover:text-white"
                 >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-white/45">
+                    <LogIn size={18} strokeWidth={2} aria-hidden="true" />
+                  </span>
                   Log in
                 </Link>
               ))}
           </div>
+
+          <Link
+            href="/contact"
+            onClick={() => setOpen(false)}
+            className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-[#0ABFA3] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-[#0abfa3]/20 transition-colors hover:bg-[#089080]"
+          >
+            Book a Consultation
+            <ArrowUpRight size={16} strokeWidth={2.5} />
+          </Link>
         </div>
       )}
     </header>

@@ -103,7 +103,7 @@ export default function Home() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white">
+    <main className="relative min-h-screen min-h-[100dvh] overflow-hidden bg-black text-white">
       <style>{`
         @keyframes marquee {
           from { transform: translateX(0); }
@@ -113,7 +113,7 @@ export default function Home() {
         .marquee-track:hover { animation-play-state: paused; }
       `}</style>
 
-      <GLSLHills width="100%" height="100vh" cameraZ={124} speed={0.42} color="white" />
+      <GLSLHills width="100%" height="100dvh" cameraZ={124} speed={0.42} color="white" />
       <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_center,rgba(10,191,163,0.28),rgba(10,191,163,0.06)_28%,transparent_55%)]" />
 
       <Nav />
@@ -230,7 +230,7 @@ export default function Home() {
       </section>
 
       {/* Bottom: CTA + Partner strip */}
-      <section className="pointer-events-none absolute inset-x-0 bottom-0 z-40">
+      <section className="pointer-events-none absolute inset-x-0 bottom-0 z-40 pb-[env(safe-area-inset-bottom)]">
 
         {/* CTA row */}
         <div className="pointer-events-auto mb-4 flex flex-wrap justify-center gap-3 px-4 sm:px-6">
