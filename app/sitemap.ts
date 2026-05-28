@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const BASE = "https://aktservices.org";
 
@@ -18,14 +18,17 @@ const partnerSlugs = [
 
 async function getBlogSlugs(): Promise<{ slug: string; updatedAt: string }[]> {
   try {
-    const supabase = createClient();
+    const supabase = createSupabaseServerClient();
     const { data } = await supabase
       .from("blog_posts")
       .select("slug, updated_at")
       .eq("published", true)
       .order("published_at", { ascending: false });
 
-    return (data ?? []).map((r) => ({ slug: r.slug, updatedAt: r.updated_at }));
+    return (data ?? []).map((r: { slug: string; updated_at: string }) => ({
+      slug: r.slug,
+      updatedAt: r.updated_at,
+    }));
   } catch {
     return [];
   }
