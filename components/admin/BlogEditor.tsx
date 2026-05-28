@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Image as ImageIcon, Loader2, Save, Trash2, Upload, X } from "lucide-react";
+import { Image as ImageIcon, Loader2, RotateCcw, Save, Trash2, Upload, X } from "lucide-react";
 import type { BlogPost, BlogPostInput } from "@/lib/types/admin";
 
 function toDateInput(iso?: string): string {
@@ -10,7 +10,30 @@ function toDateInput(iso?: string): string {
   return Number.isNaN(+d) ? new Date().toISOString().slice(0, 10) : d.toISOString().slice(0, 10);
 }
 
-/** Create/edit modal for a blog post. */
+type DraftData = {
+  title: string; slug: string; slugTouched: boolean;
+  category: string; tags: string; readTime: string;
+  excerpt: string; content: string; publishedAt: string;
+  featured: boolean; published: boolean; imageUrl: string | null;
+  savedAt: string;
+};
+
+function draftKey(post: BlogPost | null) {
+  return post ? `akt-blog-draft-${post.id}` : "akt-blog-draft-new";
+}
+
+function loadDraft(post: BlogPost | null): DraftData | null {
+  try {
+    const raw = localStorage.getItem(draftKey(post));
+    return raw ? (JSON.parse(raw) as DraftData) : null;
+  } catch { return null; }
+}
+
+function clearDraft(post: BlogPost | null) {
+  try { localStorage.removeItem(draftKey(post)); } catch {}
+}
+
+/** Create/edit modal for a blog post. Auto-saves to localStorage so Alt+Tab / close doesn't lose work. */
 export default function BlogEditor({
   post,
   onClose,
@@ -22,22 +45,60 @@ export default function BlogEditor({
   onSave: (input: BlogPostInput) => Promise<void>;
   slugify: (s: string) => string;
 }) {
-  const [title, setTitle] = useState(post?.title ?? "");
-  const [slug, setSlug] = useState(post?.slug ?? "");
-  const [slugTouched, setSlugTouched] = useState(!!post);
-  const [category, setCategory] = useState(post?.category ?? "");
-  const [tags, setTags] = useState((post?.tags ?? []).join(", "));
-  const [readTime, setReadTime] = useState(post?.readTime ?? "");
-  const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
-  const [content, setContent] = useState(post?.content ?? "");
-  const [publishedAt, setPublishedAt] = useState(toDateInput(post?.publishedAt));
-  const [featured, setFeatured] = useState(post?.featured ?? false);
-  const [published, setPublished] = useState(post?.published ?? true);
-  const [imageUrl, setImageUrl] = useState<string | null>(post?.imageUrl ?? null);
+  // Restore from localStorage draft if one exists (new posts only restore always;
+  // existing posts restore only if the draft is newer than the saved post).
+  const draft = loadDraft(post);
+  const useDraft = !!draft && (!post || new Date(draft.savedAt) > new Date(post.publishedAt ?? 0));
+
+  const [title, setTitle] = useState(useDraft ? draft!.title : (post?.title ?? ""));
+  const [slug, setSlug] = useState(useDraft ? draft!.slug : (post?.slug ?? ""));
+  const [slugTouched, setSlugTouched] = useState(useDraft ? draft!.slugTouched : !!post);
+  const [category, setCategory] = useState(useDraft ? draft!.category : (post?.category ?? ""));
+  const [tags, setTags] = useState(useDraft ? draft!.tags : (post?.tags ?? []).join(", "));
+  const [readTime, setReadTime] = useState(useDraft ? draft!.readTime : (post?.readTime ?? ""));
+  const [excerpt, setExcerpt] = useState(useDraft ? draft!.excerpt : (post?.excerpt ?? ""));
+  const [content, setContent] = useState(useDraft ? draft!.content : (post?.content ?? ""));
+  const [publishedAt, setPublishedAt] = useState(useDraft ? draft!.publishedAt : toDateInput(post?.publishedAt));
+  const [featured, setFeatured] = useState(useDraft ? draft!.featured : (post?.featured ?? false));
+  const [published, setPublished] = useState(useDraft ? draft!.published : (post?.published ?? true));
+  const [imageUrl, setImageUrl] = useState<string | null>(useDraft ? draft!.imageUrl : (post?.imageUrl ?? null));
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [draftRestored, setDraftRestored] = useState(useDraft);
   const fileRef = useRef<HTMLInputElement>(null);
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-save to localStorage 800ms after any field change.
+  useEffect(() => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      const data: DraftData = {
+        title, slug, slugTouched, category, tags, readTime,
+        excerpt, content, publishedAt, featured, published, imageUrl,
+        savedAt: new Date().toISOString(),
+      };
+      try { localStorage.setItem(draftKey(post), JSON.stringify(data)); } catch {}
+    }, 800);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [title, slug, slugTouched, category, tags, readTime, excerpt, content, publishedAt, featured, published, imageUrl, post]);
+
+  const discardDraft = () => {
+    clearDraft(post);
+    setTitle(post?.title ?? "");
+    setSlug(post?.slug ?? "");
+    setSlugTouched(!!post);
+    setCategory(post?.category ?? "");
+    setTags((post?.tags ?? []).join(", "));
+    setReadTime(post?.readTime ?? "");
+    setExcerpt(post?.excerpt ?? "");
+    setContent(post?.content ?? "");
+    setPublishedAt(toDateInput(post?.publishedAt));
+    setFeatured(post?.featured ?? false);
+    setPublished(post?.published ?? true);
+    setImageUrl(post?.imageUrl ?? null);
+    setDraftRestored(false);
+  };
 
   const pickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -96,6 +157,7 @@ export default function BlogEditor({
         featured,
         published,
       });
+      clearDraft(post); // saved successfully — wipe the draft
     } catch (e2) {
       setError(e2 instanceof Error ? e2.message : "Save failed.");
       setSaving(false);
@@ -124,6 +186,24 @@ export default function BlogEditor({
         </div>
 
         <form onSubmit={submit} className="space-y-5 px-6 py-5">
+
+          {/* Draft-restored banner */}
+          {draftRestored && (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-[#0ABFA3]/30 bg-[#062B26] px-4 py-2.5">
+              <p className="text-[12px] font-dm font-semibold text-[#0ABFA3]">
+                ✦ Draft restored — your unsaved work is back.
+              </p>
+              <button
+                type="button"
+                onClick={discardDraft}
+                className="flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-dm font-semibold text-white/50 transition-colors hover:bg-white/5 hover:text-white"
+              >
+                <RotateCcw size={11} />
+                Discard draft
+              </button>
+            </div>
+          )}
+
           {/* Cover image */}
           <div>
             <span className="mb-2 block text-[12px] font-dm font-semibold uppercase tracking-wide text-muted">

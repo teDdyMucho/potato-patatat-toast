@@ -18,6 +18,7 @@ import {
   Calendar,
   Target,
   Wand2,
+  Megaphone,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -143,6 +144,17 @@ const tools = [
     sessions: "128",
     badge: "New",
   },
+  {
+    category: "Marketing AI",
+    name: "Business FB Ads",
+    description:
+      "Generate high-converting Facebook and Instagram ad copy for your business — headlines, primary text, and CTAs — tailored to your offer, audience, and objective. Powered by Claude AI for scroll-stopping ad creative that drives clicks.",
+    icon: Megaphone,
+    color: "#0ABFA3",
+    bg: "#062B26",
+    sessions: "0",
+    badge: "New",
+  },
 ];
 
 const categories = [
@@ -152,6 +164,7 @@ const categories = [
   "Design AI",
   "Productivity AI",
   "Automation AI",
+  "Marketing AI",
 ];
 
 export default function AIToolsPage() {
