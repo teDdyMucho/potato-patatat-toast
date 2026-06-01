@@ -19,7 +19,7 @@ const aiQuestions = [
   "Setup GHL?",
 ];
 
-type Message = { role: "user" | "assistant"; content: string };
+type Message = { role: "user" | "assistant"; content: string; html?: string };
 
 const WELCOME: Message = {
   role: "assistant",
@@ -32,11 +32,33 @@ const partners = partnerCases.map((p) => ({
   slug: p.slug,
 }));
 
+function renderContent(content: string) {
+  return content.split("\n").map((line, i) => {
+    const isBullet = line.startsWith("• ") || line.startsWith("- ");
+    const text = isBullet ? line.slice(2) : line;
+    const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+    return (
+      <span key={i} className={`block${isBullet ? " flex gap-1" : ""}`}>
+        {isBullet && <span>•</span>}
+        <span>
+          {parts.map((part, j) => {
+            if (part.startsWith("**") && part.endsWith("**"))
+              return <strong key={j}>{part.slice(2, -2)}</strong>;
+            if (part.startsWith("*") && part.endsWith("*"))
+              return <em key={j}>{part.slice(1, -1)}</em>;
+            return <span key={j}>{part}</span>;
+          })}
+        </span>
+      </span>
+    );
+  });
+}
+
 export default function Home() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
-  const [input, setInput] = useState("");
+  const [isEmpty, setIsEmpty] = useState(true);
   const [loading, setLoading] = useState(false);
   // Stable id so the webhook/n8n flow can keep this chat's memory.
   const [sessionId] = useState(() =>
@@ -45,7 +67,7 @@ export default function Home() {
       : Math.random().toString(36).slice(2),
   );
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -58,7 +80,7 @@ export default function Home() {
 
   useEffect(() => {
     if (chatOpen) {
-      setTimeout(() => inputRef.current?.focus(), 80);
+      setTimeout(() => editorRef.current?.focus(), 80);
     }
   }, [chatOpen]);
 
@@ -74,24 +96,28 @@ export default function Home() {
   const closeChat = () => {
     setChatOpen(false);
     setMessages([WELCOME]);
-    setInput("");
+    if (editorRef.current) editorRef.current.innerHTML = "";
+    setIsEmpty(true);
   };
 
   const sendMessage = async () => {
-    const text = input.trim();
+    const el = editorRef.current;
+    const text = el?.innerText?.trim() ?? "";
     if (!text || loading) return;
 
-    const userMsg: Message = { role: "user", content: text };
+    const html = el?.innerHTML ?? text;
+    const userMsg: Message = { role: "user", content: text, html };
     const next = [...messages, userMsg];
     setMessages(next);
-    setInput("");
+    if (el) el.innerHTML = "";
+    setIsEmpty(true);
     setLoading(true);
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next, sessionId }),
+        body: JSON.stringify({ messages: next.map(({ role, content }) => ({ role, content })), sessionId }),
       });
       const data = await res.json();
       setMessages([...next, { role: "assistant", content: data.reply }]);
@@ -145,6 +171,8 @@ export default function Home() {
         }
         .marquee-track { animation: marquee 28s linear infinite; }
         .marquee-track:hover { animation-play-state: paused; }
+        [contenteditable] b, [contenteditable] strong { font-weight: 700; }
+        [contenteditable] i, [contenteditable] em { font-style: italic; }
       `}</style>
 
       <GLSLHills width="100%" height="100dvh" cameraZ={124} speed={0.42} color="white" />
@@ -221,7 +249,9 @@ export default function Home() {
                         : "mr-auto bg-[#062B26] text-[#7fffee]"
                     }`}
                   >
-                    {m.content}
+                    {m.role === "user" && m.html
+                      ? <span dangerouslySetInnerHTML={{ __html: m.html }} />
+                      : renderContent(m.content)}
                   </div>
                 ))}
                 {loading && (
@@ -239,19 +269,41 @@ export default function Home() {
               </div>
 
               {/* Input */}
-              <div className="flex gap-2">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                  placeholder="Ask about our services…"
-                  className="min-w-0 flex-1 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-[12px] text-white placeholder-white/30 outline-none transition-colors focus:border-[#0abfa3]"
-                />
+              <div className="flex items-end gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <div
+                    ref={editorRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onInput={() => {
+                      const text = editorRef.current?.innerText?.trim() ?? "";
+                      setIsEmpty(text === "");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                      if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+                        e.preventDefault();
+                        document.execCommand("bold", false);
+                      }
+                      if ((e.ctrlKey || e.metaKey) && e.key === "i") {
+                        e.preventDefault();
+                        document.execCommand("italic", false);
+                      }
+                    }}
+                    className="min-h-[34px] max-h-[120px] overflow-y-auto rounded-md border border-white/10 bg-white/5 px-3 py-2 text-[12px] leading-[1.4] text-white outline-none transition-colors focus:border-[#0abfa3]"
+                  />
+                  {isEmpty && (
+                    <span className="pointer-events-none absolute left-3 top-2 select-none text-[12px] text-white/30">
+                      Ask about our services…
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={sendMessage}
-                  disabled={!input.trim() || loading}
+                  disabled={isEmpty || loading}
                   className="flex shrink-0 items-center justify-center rounded-md px-3 py-2 text-white transition-colors disabled:opacity-40"
                   style={{ background: "#0abfa3" }}
                 >
