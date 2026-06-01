@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Image as ImageIcon, Loader2, RotateCcw, Save, Trash2, Upload, X } from "lucide-react";
+import { Image as ImageIcon, Loader2, Plus, RotateCcw, Save, Trash2, Upload, X } from "lucide-react";
 import type { BlogPost, BlogPostInput } from "@/lib/types/admin";
 
 function toDateInput(iso?: string): string {
@@ -12,11 +12,16 @@ function toDateInput(iso?: string): string {
 
 type DraftData = {
   title: string; slug: string; slugTouched: boolean;
-  category: string; tags: string; readTime: string;
+  category: string; tags: string[] | string; readTime: string;
   excerpt: string; content: string; publishedAt: string;
   featured: boolean; published: boolean; imageUrl: string | null;
   savedAt: string;
 };
+
+function parseDraftTags(t: string[] | string): string[] {
+  if (Array.isArray(t)) return t;
+  return t.split(",").map((s) => s.trim()).filter(Boolean);
+}
 
 function draftKey(post: BlogPost | null) {
   return post ? `akt-blog-draft-${post.id}` : "akt-blog-draft-new";
@@ -54,7 +59,7 @@ export default function BlogEditor({
   const [slug, setSlug] = useState(useDraft ? draft!.slug : (post?.slug ?? ""));
   const [slugTouched, setSlugTouched] = useState(useDraft ? draft!.slugTouched : !!post);
   const [category, setCategory] = useState(useDraft ? draft!.category : (post?.category ?? ""));
-  const [tags, setTags] = useState(useDraft ? draft!.tags : (post?.tags ?? []).join(", "));
+  const [tags, setTags] = useState<string[]>(useDraft ? parseDraftTags(draft!.tags) : (post?.tags ?? []));
   const [readTime, setReadTime] = useState(useDraft ? draft!.readTime : (post?.readTime ?? ""));
   const [excerpt, setExcerpt] = useState(useDraft ? draft!.excerpt : (post?.excerpt ?? ""));
   const [content, setContent] = useState(useDraft ? draft!.content : (post?.content ?? ""));
@@ -89,7 +94,7 @@ export default function BlogEditor({
     setSlug(post?.slug ?? "");
     setSlugTouched(!!post);
     setCategory(post?.category ?? "");
-    setTags((post?.tags ?? []).join(", "));
+    setTags(post?.tags ?? []);
     setReadTime(post?.readTime ?? "");
     setExcerpt(post?.excerpt ?? "");
     setContent(post?.content ?? "");
@@ -145,10 +150,7 @@ export default function BlogEditor({
         title: title.trim(),
         slug: slug.trim() || slugify(title),
         category: category.trim(),
-        tags: tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
+        tags,
         readTime: readTime.trim(),
         excerpt: excerpt.trim(),
         content,
@@ -275,13 +277,7 @@ export default function BlogEditor({
             <FieldText label="Read time" value={readTime} onChange={setReadTime} placeholder="8 min read" />
           </div>
 
-          <FieldText
-            label="Tags"
-            value={tags}
-            onChange={setTags}
-            placeholder="GoHighLevel, Automation"
-            hint="Comma-separated"
-          />
+          <TagInput tags={tags} onChange={setTags} />
 
           <label className="block">
             <span className="mb-2 block text-[12px] font-dm font-semibold uppercase tracking-wide text-muted">
@@ -394,6 +390,68 @@ function FieldText({
       />
       {hint && <span className="mt-1.5 block text-[12px] font-dm text-muted">{hint}</span>}
     </label>
+  );
+}
+
+function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {
+  const [input, setInput] = useState("");
+
+  const addTag = () => {
+    const trimmed = input.trim();
+    if (trimmed && !tags.includes(trimmed)) onChange([...tags, trimmed]);
+    setInput("");
+  };
+
+  return (
+    <div>
+      <span className="mb-2 block text-[12px] font-dm font-semibold uppercase tracking-wide text-muted">
+        Tags
+      </span>
+      <div className="flex min-h-[42px] flex-wrap items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 transition-colors focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/40">
+        {tags.map((tag, i) => (
+          <span
+            key={i}
+            className="inline-flex items-center gap-1 rounded-full border border-primary/60 px-2.5 py-0.5 text-[12px] font-dm font-semibold text-primary"
+          >
+            {tag}
+            <button
+              type="button"
+              onClick={() => onChange(tags.filter((_, j) => j !== i))}
+              className="text-primary/50 transition-colors hover:text-primary"
+              aria-label={`Remove ${tag}`}
+            >
+              <X size={10} />
+            </button>
+          </span>
+        ))}
+        <div className="flex flex-1 items-center gap-1">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); addTag(); }
+              if (e.key === "Backspace" && !input && tags.length > 0)
+                onChange(tags.slice(0, -1));
+            }}
+            placeholder={tags.length === 0 ? "Add a tag…" : ""}
+            className="min-w-[80px] flex-1 bg-transparent text-[14px] font-dm text-body placeholder:text-muted/60 outline-none"
+          />
+          {input.trim() && (
+            <button
+              type="button"
+              onClick={addTag}
+              className="flex items-center justify-center rounded-full bg-primary/20 p-0.5 text-primary transition-colors hover:bg-primary/30"
+            >
+              <Plus size={12} />
+            </button>
+          )}
+        </div>
+      </div>
+      <span className="mt-1.5 block text-[12px] font-dm text-muted">
+        Press Enter or + to add a tag
+      </span>
+    </div>
   );
 }
 
