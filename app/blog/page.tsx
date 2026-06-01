@@ -172,7 +172,7 @@ export default async function BlogPage() {
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       {featured.tags.map((tag) => {
-                        const style = tagColors[tag] || { bg: "#101113", text: "#A1A1AA", border: "#2C2C2E" };
+                        const style = tagColors[tag] || { bg: "#073B34", text: "#0ABFA3", border: "#0ABFA3" };
                         return (
                           <span
                             key={tag}
@@ -235,18 +235,22 @@ export default async function BlogPage() {
                     <span className="text-[11px] font-dm text-muted flex items-center gap-1">
                       <Clock size={10} /> {post.readTime}
                     </span>
-                    {post.tags.slice(0, 1).map((tag) => {
-                      const style = tagColors[tag] || { bg: "#101113", text: "#A1A1AA", border: "#2C2C2E" };
-                      return (
-                        <span
-                          key={tag}
-                          className="ml-auto text-[11px] font-dm font-semibold px-2.5 py-0.5 rounded-full border"
-                          style={{ background: style.bg, color: style.text, borderColor: style.border }}
-                        >
-                          {tag}
-                        </span>
-                      );
-                    })}
+                    {post.tags.length > 0 && (
+                      <div className="ml-auto flex flex-wrap justify-end gap-1.5">
+                        {post.tags.map((tag) => {
+                          const style = tagColors[tag] || { bg: "#073B34", text: "#0ABFA3", border: "#0ABFA3" };
+                          return (
+                            <span
+                              key={tag}
+                              className="text-[11px] font-dm font-semibold px-2.5 py-0.5 rounded-full border"
+                              style={{ background: style.bg, color: style.text, borderColor: style.border }}
+                            >
+                              {tag}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </Link>
               ))}
