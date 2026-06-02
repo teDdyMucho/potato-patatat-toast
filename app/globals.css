@@ -124,6 +124,26 @@ body {
   }
 }
 
+/* Infinite tag carousel (blog cards) */
+@keyframes tagScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.tag-scroll-track {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  width: max-content;
+  will-change: transform;
+  animation: tagScroll 20s linear infinite;
+}
+.tag-scroll-wrap:hover .tag-scroll-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tag-scroll-track { animation: none; }
+}
+
 /* Continuous horizontal marquee (e.g. the About tech-stack carousel on mobile/tablet) */
 @keyframes marqueeX {
   from {

@@ -85,6 +85,23 @@ export default async function BlogPage() {
   return (
     <>
       <Nav />
+      <style>{`
+        @keyframes tagScroll {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+        .tag-scroll-track {
+          display: flex;
+          flex-wrap: nowrap;
+          gap: 6px;
+          width: max-content;
+          will-change: transform;
+          animation: tagScroll 20s linear infinite;
+        }
+        .tag-scroll-wrap:hover .tag-scroll-track {
+          animation-play-state: paused;
+        }
+      `}</style>
       <main className="pt-16">
         {/* Hero */}
         <section className="py-16 bg-[#101113] border-b border-border">
@@ -170,20 +187,32 @@ export default async function BlogPage() {
                     <p className="text-[14px] font-dm text-muted leading-relaxed mb-5 max-w-xl">
                       {featured.excerpt}
                     </p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {featured.tags.map((tag) => {
-                        const style = tagColors[tag] || { bg: "#073B34", text: "#0ABFA3", border: "#0ABFA3" };
-                        return (
-                          <span
-                            key={tag}
-                            className="text-[11px] font-dm font-semibold px-2.5 py-0.5 rounded-full border"
-                            style={{ background: style.bg, color: style.text, borderColor: style.border }}
-                          >
-                            {tag}
-                          </span>
-                        );
-                      })}
-                      <span className="ml-auto text-[12px] font-dm text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-4">
+                      {featured.tags.length > 0 && (
+                        <div
+                          className="tag-scroll-wrap overflow-hidden flex-1 min-w-0"
+                          style={{
+                            maskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+                            WebkitMaskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+                          }}
+                        >
+                          <div className="tag-scroll-track">
+                            {[...featured.tags, ...featured.tags].map((tag, idx) => {
+                              const style = tagColors[tag] || { bg: "#073B34", text: "#0ABFA3", border: "#0ABFA3" };
+                              return (
+                                <span
+                                  key={idx}
+                                  className="flex-none text-[11px] font-dm font-semibold px-2.5 py-0.5 rounded-full border"
+                                  style={{ background: style.bg, color: style.text, borderColor: style.border }}
+                                >
+                                  {tag}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      <span className="flex-none text-[12px] font-dm text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         Read post <ArrowUpRight size={12} />
                       </span>
                     </div>
@@ -228,27 +257,35 @@ export default async function BlogPage() {
                     {post.excerpt}
                   </p>
 
-                  <div className="flex flex-wrap items-center gap-2 mt-auto pt-4 border-t border-border">
-                    <span className="text-[11px] font-dm text-muted flex items-center gap-1">
+                  <div className="flex items-center gap-2 mt-auto pt-4 border-t border-border">
+                    <span className="flex-none text-[11px] font-dm text-muted flex items-center gap-1">
                       <Calendar size={10} /> {post.date}
                     </span>
-                    <span className="text-[11px] font-dm text-muted flex items-center gap-1">
+                    <span className="flex-none text-[11px] font-dm text-muted flex items-center gap-1">
                       <Clock size={10} /> {post.readTime}
                     </span>
                     {post.tags.length > 0 && (
-                      <div className="ml-auto flex flex-wrap justify-end gap-1.5">
-                        {post.tags.map((tag) => {
-                          const style = tagColors[tag] || { bg: "#073B34", text: "#0ABFA3", border: "#0ABFA3" };
-                          return (
-                            <span
-                              key={tag}
-                              className="text-[11px] font-dm font-semibold px-2.5 py-0.5 rounded-full border"
-                              style={{ background: style.bg, color: style.text, borderColor: style.border }}
-                            >
-                              {tag}
-                            </span>
-                          );
-                        })}
+                      <div
+                        className="tag-scroll-wrap ml-auto overflow-hidden flex-1 min-w-0"
+                        style={{
+                          maskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+                          WebkitMaskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+                        }}
+                      >
+                        <div className="tag-scroll-track">
+                          {[...post.tags, ...post.tags].map((tag, idx) => {
+                            const style = tagColors[tag] || { bg: "#073B34", text: "#0ABFA3", border: "#0ABFA3" };
+                            return (
+                              <span
+                                key={idx}
+                                className="flex-none text-[11px] font-dm font-semibold px-2.5 py-0.5 rounded-full border"
+                                style={{ background: style.bg, color: style.text, borderColor: style.border }}
+                              >
+                                {tag}
+                              </span>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>
