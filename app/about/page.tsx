@@ -54,37 +54,27 @@ const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
     {
-      "@type": "Organization",
-      "@id": "https://aktservices.org/#organization",
-      name: "AKT Virtual Assistance Services",
-      url: "https://aktservices.org",
-      foundingDate: "2020",
-      founder: {
-        "@type": "Person",
-        name: "Jose Angelo Tapang",
-        jobTitle: "CEO & Founder",
-      },
+      "@type": "Person",
+      "@id": "https://aktservices.org/about#founder",
+      name: "Jose Angelo Tapang",
+      givenName: "Jose Angelo",
+      familyName: "Tapang",
+      jobTitle: "CEO & Founder",
       description:
-        "Philippine-based AI automation agency specializing in GoHighLevel CRM, n8n workflow automation, Retell AI voice agents, and custom AI system builds for businesses worldwide.",
-      areaServed: "Worldwide",
+        "Jose Angelo Tapang founded AKT Virtual Assistance Services in 2020. With a background in BS Civil Engineering and IT, he applies systems thinking to AI automation — building GoHighLevel CRM stacks, n8n workflows, Retell AI voice agents, and custom AI infrastructure for businesses in the US, Canada, UK, and Australia.",
+      url: "https://aktservices.org/about",
+      worksFor: { "@id": "https://aktservices.org/#organization" },
       knowsAbout: [
         "GoHighLevel CRM Automation",
         "n8n Workflow Automation",
         "Retell AI Voice Agents",
         "AI Chatbot Development",
         "Business Process Automation",
-        "SEO Automation",
-        "Virtual Assistant Operations",
+        "Filipino Virtual Assistant Operations",
+        "AI Infrastructure Buildouts",
       ],
-      contactPoint: {
-        "@type": "ContactPoint",
-        email: "admin@aktservices.org",
-        contactType: "Business Inquiries",
-      },
-      sameAs: [
-        "https://linkedin.com/in/jatakt",
-        "https://www.facebook.com/profile.php?id=100075861475134",
-      ],
+      sameAs: ["https://linkedin.com/in/jatakt"],
+      nationality: { "@type": "Country", name: "Philippines" },
     },
     {
       "@type": "FAQPage",
@@ -140,41 +130,10 @@ const jsonLd = {
       ],
     },
     {
-      "@type": "HowTo",
-      name: "How AKT Builds an AI Automation System for Your Business",
-      description:
-        "AKT's process for integrating AI into your business operations — from discovery to live deployment.",
-      step: [
-        {
-          "@type": "HowToStep",
-          position: 1,
-          name: "Discovery & Systems Audit",
-          text: "We map your current tools, workflows, and pain points. We identify what can be automated, what tools are missing, and where AI can replace manual effort. This gives us the blueprint for your custom automation stack.",
-        },
-        {
-          "@type": "HowToStep",
-          position: 2,
-          name: "Stack Design & Tool Selection",
-          text: "We select the right combination of tools — GoHighLevel, n8n, Retell AI, Claude AI, Supabase, Monday.com, and more — based on your specific business needs. Every system is purpose-built for your use case, not templated.",
-        },
-        {
-          "@type": "HowToStep",
-          position: 3,
-          name: "Build, Integrate & Connect",
-          text: "We build each system and connect them into one seamless pipeline. Leads flow from AI chat to CRM. Voice agents push call data to follow-up sequences. Every tool talks to every other tool — zero manual handoffs.",
-        },
-        {
-          "@type": "HowToStep",
-          position: 4,
-          name: "Deploy AI Into Your Workforce",
-          text: "We deploy AI agents as active members of your team — answering calls 24/7, qualifying leads, sending follow-ups, posting content, managing tasks, and reporting metrics. Your business runs even when your team is offline.",
-        },
-        {
-          "@type": "HowToStep",
-          position: 5,
-          name: "Monitor, Maintain & Optimize",
-          text: "We monitor every system post-launch. n8n workflows are checked for errors, AI prompts are optimized as your business evolves, and the entire stack is maintained to run with zero downtime.",
-        },
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: "https://aktservices.org" },
+        { "@type": "ListItem", position: 2, name: "About", item: "https://aktservices.org/about" },
       ],
     },
   ],

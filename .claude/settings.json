@@ -5,7 +5,9 @@
       "Bash(npx tsc *)",
       "Bash(echo \"=== TSC EXIT: $? ===\")",
       "PowerShell($p = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess; if \\($p\\) { Stop-Process -Id $p -Force; \"stopped dev server PID $p\" } else { \"no server on 3001\" })",
-      "PowerShell($p = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess; if \\($p\\) { Stop-Process -Id $p -Force; \"stopped PID $p\" } else { \"no server on 3001\" })"
+      "PowerShell($p = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty OwningProcess; if \\($p\\) { Stop-Process -Id $p -Force; \"stopped PID $p\" } else { \"no server on 3001\" })",
+      "Skill(geo-audit)",
+      "Skill(geo-audit:*)"
     ]
   }
 }

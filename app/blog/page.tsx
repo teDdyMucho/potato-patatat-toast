@@ -159,7 +159,9 @@ export default async function BlogPage() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={featured.imageUrl}
-                      alt=""
+                      alt={featured.title}
+                      width={720}
+                      height={192}
                       className="h-48 w-full rounded-lg object-cover md:h-auto md:w-72 md:shrink-0"
                     />
                   )}
@@ -233,7 +235,9 @@ export default async function BlogPage() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={post.imageUrl}
-                      alt=""
+                      alt={post.title}
+                      width={400}
+                      height={160}
                       className="mb-4 h-40 w-full rounded-lg object-cover"
                     />
                   )}

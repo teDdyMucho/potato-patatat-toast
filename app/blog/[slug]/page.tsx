@@ -166,15 +166,51 @@ export default async function BlogPostPage({
 
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Article",
-    headline: article.title,
-    description: article.excerpt,
-    image: article.imageUrl ?? undefined,
-    datePublished: article.date,
-    author: { "@type": "Organization", name: "AKT Virtual Assistance Services", url: "https://aktservices.org" },
-    publisher: { "@type": "Organization", name: "AKT Virtual Assistance Services", url: "https://aktservices.org" },
-    mainEntityOfPage: { "@type": "WebPage", "@id": `https://aktservices.org/blog/${params.slug}` },
-    keywords: article.tags.join(", "),
+    "@graph": [
+      {
+        "@type": "BlogPosting",
+        "@id": `https://aktservices.org/blog/${params.slug}#article`,
+        headline: article.title,
+        description: article.excerpt,
+        image: article.imageUrl
+          ? { "@type": "ImageObject", url: article.imageUrl }
+          : undefined,
+        datePublished: article.date,
+        dateModified: article.date,
+        inLanguage: "en-US",
+        keywords: article.tags.join(", "),
+        articleSection: article.category,
+        author: {
+          "@type": "Person",
+          "@id": "https://aktservices.org/about#founder",
+          name: "Jose Angelo Tapang",
+          jobTitle: "CEO & Founder",
+          url: "https://aktservices.org/about",
+          sameAs: ["https://linkedin.com/in/jatakt"],
+        },
+        publisher: { "@id": "https://aktservices.org/#organization" },
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id": `https://aktservices.org/blog/${params.slug}`,
+        },
+        about: article.tags.slice(0, 3).map((tag) => ({
+          "@type": "Thing",
+          name: tag,
+        })),
+        speakable: {
+          "@type": "SpeakableSpecification",
+          cssSelector: ["h1", ".article-excerpt"],
+        },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: "https://aktservices.org" },
+          { "@type": "ListItem", position: 2, name: "Blog", item: "https://aktservices.org/blog" },
+          { "@type": "ListItem", position: 3, name: article.title, item: `https://aktservices.org/blog/${params.slug}` },
+        ],
+      },
+    ],
   };
 
   return (
@@ -219,7 +255,7 @@ export default async function BlogPostPage({
             </h1>
 
             {article.excerpt && (
-              <p className="mt-5 text-[17px] font-dm leading-relaxed text-muted">
+              <p className="article-excerpt mt-5 text-[17px] font-dm leading-relaxed text-muted">
                 {article.excerpt}
               </p>
             )}
