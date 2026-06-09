@@ -8,6 +8,7 @@ import {
   Bot,
   BriefcaseBusiness,
   ChevronDown,
+  ClipboardList,
   Handshake,
   House,
   LogIn,
@@ -35,6 +36,7 @@ const links = [
   },
   { label: "Partners", href: "/partners", value: "partners", icon: Handshake },
   { label: "AI Tools", href: "/ai-tools", value: "ai-tools", icon: Bot },
+  { label: "Review", href: "/review", value: "review", icon: ClipboardList },
   { label: "Blog", href: "/blog", value: "blog", icon: Newspaper },
 ];
 
@@ -44,6 +46,7 @@ function activeValue(pathname: string) {
   if (pathname.startsWith("/services")) return "services";
   if (pathname.startsWith("/partners")) return "partners";
   if (pathname.startsWith("/ai-tools")) return "ai-tools";
+  if (pathname.startsWith("/review")) return "review";
   if (pathname.startsWith("/blog")) return "blog";
   return "";
 }

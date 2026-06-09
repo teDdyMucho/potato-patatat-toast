@@ -290,7 +290,7 @@ export default function UsersClient() {
   );
 }
 
-function RoleBadge({ role }: { role: "user" | "admin" }) {
+function RoleBadge({ role }: { role: "user" | "admin" | "staff" }) {
   if (role === "admin") {
     return (
       <span
@@ -299,6 +299,17 @@ function RoleBadge({ role }: { role: "user" | "admin" }) {
       >
         <ShieldCheck size={12} />
         Admin
+      </span>
+    );
+  }
+  if (role === "staff") {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-dm font-semibold"
+        style={{ background: "#1a1208", color: "#F59E0B" }}
+      >
+        <ShieldCheck size={12} />
+        Staff
       </span>
     );
   }

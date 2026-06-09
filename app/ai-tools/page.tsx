@@ -19,7 +19,6 @@ import {
   Target,
   Wand2,
   Megaphone,
-  Briefcase,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -156,17 +155,6 @@ const tools = [
     sessions: "0",
     badge: "New",
   },
-  {
-    category: "Collaboration AI",
-    name: "Project Review",
-    description:
-      "Workers connect with clients by email, upload project deliverables, and get instant approve or decline decisions — with feedback. A streamlined project portal that replaces back-and-forth emails.",
-    icon: Briefcase,
-    color: "#0ABFA3",
-    bg: "#062B26",
-    sessions: "0",
-    badge: "New",
-  },
 ];
 
 const categories = [
@@ -177,7 +165,6 @@ const categories = [
   "Productivity AI",
   "Automation AI",
   "Marketing AI",
-  "Collaboration AI",
 ];
 
 export default function AIToolsPage() {
@@ -191,7 +178,6 @@ export default function AIToolsPage() {
   // Tools that have their own dedicated page.
   const toolPages: Record<string, string> = {
     "Design Adjuster": "/ai-tools/design-adjuster",
-    "Project Review": "/ai-tools/project-review",
   };
 
   const handleTry = (toolName: string) => {

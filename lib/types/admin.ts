@@ -1,6 +1,6 @@
 /** Shared admin types — no runtime imports, safe for client + server. */
 
-export type AdminRole = "user" | "admin";
+export type AdminRole = "user" | "admin" | "staff";
 export type AdminStatus = "active" | "suspended";
 
 export type AdminUser = {

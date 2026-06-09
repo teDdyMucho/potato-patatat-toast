@@ -35,10 +35,12 @@ type AuthResult =
 
 type AuthContextValue = {
   user: User | null;
-  /** Current user's role from `public.profiles` ('user' | 'admin'), or null when signed out. */
+  /** Current user's role from `public.profiles` ('user' | 'admin' | 'staff'), or null when signed out. */
   role: string | null;
   /** Convenience flag for gating admin-only UI. */
   isAdmin: boolean;
+  /** Convenience flag for gating staff-only UI. */
+  isStaff: boolean;
   /** False until the initial session check completes. */
   ready: boolean;
   login: (email: string, password: string) => Promise<AuthResult>;
@@ -186,6 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         role,
         isAdmin: role === "admin",
+        isStaff: role === "staff",
         ready,
         login,
         signup,

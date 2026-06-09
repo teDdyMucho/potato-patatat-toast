@@ -55,3 +55,40 @@ export async function requireAdminApi(): Promise<
     response: NextResponse.json({ error: check.status }, { status: code }),
   };
 }
+
+/**
+ * Server-side staff gate. Allows both 'staff' and 'admin' roles through.
+ */
+export async function checkStaff(): Promise<AdminCheck> {
+  const supabase = createSupabaseServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { status: "unauthenticated" };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, status")
+    .eq("id", user.id)
+    .single();
+
+  if (!["admin", "staff"].includes(profile?.role ?? "") || profile?.status === "suspended") {
+    return { status: "forbidden", email: user.email ?? "" };
+  }
+
+  return { status: "ok", userId: user.id, email: user.email ?? "" };
+}
+
+export async function requireStaffApi(): Promise<
+  { ok: true; userId: string } | { ok: false; response: NextResponse }
+> {
+  const check = await checkStaff();
+  if (check.status === "ok") return { ok: true, userId: check.userId };
+  const code = check.status === "unauthenticated" ? 401 : 403;
+  return {
+    ok: false,
+    response: NextResponse.json({ error: check.status }, { status: code }),
+  };
+}
