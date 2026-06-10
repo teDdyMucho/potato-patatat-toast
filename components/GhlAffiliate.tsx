@@ -21,12 +21,6 @@ export const GHL_URL = "https://www.gohighlevel.com/?fp_ref=akt-virtual-assistan
 
 const PLANS = [
   {
-    name: "Free",
-    desc: "Free Registration",
-    url: "https://www.gohighlevel.com/?fp_ref=akt-virtual-assistant-services14",
-    icon: Gift,
-  },
-  {
     name: "Annual",
     desc: "Link to Refer People to the HighLevel Starter OR Unlimited Annual Plans",
     url: "https://gohighlevel.com/annual?fp_ref=akt-virtual-assistant-services14",
@@ -81,6 +75,13 @@ const PLANS = [
     icon: Megaphone,
   },
 ];
+
+const FREE_PLAN = {
+  name: "Free",
+  desc: "Free Registration",
+  url: "https://www.gohighlevel.com/?fp_ref=akt-virtual-assistant-services14",
+  icon: Gift,
+};
 
 export default function GhlAffiliate() {
   const [open, setOpen] = useState(false);
@@ -219,31 +220,63 @@ export default function GhlAffiliate() {
               </div>
 
               {/* Plan buttons grid */}
-              <div className="grid grid-cols-2 gap-2.5 p-5 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2.5 p-5 pb-3 sm:grid-cols-3">
                 {PLANS.map((plan) => {
                   const Icon = plan.icon;
                   return (
                     <div key={plan.name} className="group relative">
-                      {/* Tooltip — shows description on hover */}
+                      {/* Tooltip */}
                       <div className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2.5 w-max max-w-[180px] -translate-x-1/2 rounded-lg border border-[#155E53]/60 bg-[#050608] px-3 py-2 text-center text-[11px] font-dm leading-relaxed text-white/90 opacity-0 shadow-xl transition-opacity duration-150 group-hover:opacity-100">
                         {plan.desc}
-                        {/* caret */}
                         <span className="absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-x-[5px] border-t-[5px] border-x-transparent border-t-[#050608]" />
                       </div>
-
-                      <a
+                      <motion.a
                         href={plan.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex flex-col items-center gap-2 rounded-xl border border-[#155E53]/40 bg-[#062B26]/40 px-3 py-4 text-center transition-all hover:border-[#0ABFA3]/60 hover:bg-[#0ABFA3]/10"
+                        whileHover={{ scale: 1.08 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 380, damping: 22 }}
+                        className="flex flex-col items-center gap-2 rounded-xl border border-[#155E53]/40 bg-[#062B26]/40 px-3 py-4 text-center hover:border-[#0ABFA3]/60 hover:bg-[#0ABFA3]/10"
                       >
                         <Icon size={20} style={{ color: "#0ABFA3" }} />
                         <span className="text-[12px] font-dm font-semibold text-white">{plan.name}</span>
                         <ArrowUpRight size={11} className="text-muted/50" />
-                      </a>
+                      </motion.a>
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Free — full-width highlight button */}
+              <div className="group relative px-5 pb-5">
+                {/* Tooltip */}
+                <div className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2.5 w-max max-w-[200px] -translate-x-1/2 rounded-lg border border-[#155E53]/60 bg-[#050608] px-3 py-2 text-center text-[11px] font-dm leading-relaxed text-white/90 opacity-0 shadow-xl transition-opacity duration-150 group-hover:opacity-100">
+                  {FREE_PLAN.desc}
+                  <span className="absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-x-[5px] border-t-[5px] border-x-transparent border-t-[#050608]" />
+                </div>
+                <motion.a
+                  href={FREE_PLAN.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.035 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: "spring", stiffness: 380, damping: 22 }}
+                  className="relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-xl border border-[#0ABFA3]/50 bg-gradient-to-r from-[#062B26] via-[#0ABFA3]/15 to-[#062B26] px-5 py-3.5 text-center shadow-[0_0_18px_rgba(10,191,163,0.18)]"
+                >
+                  {/* animated glow sweep */}
+                  <motion.span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 rounded-xl bg-[#0ABFA3]/10"
+                    animate={{ opacity: [0.4, 0.9, 0.4] }}
+                    transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <FREE_PLAN.icon size={18} style={{ color: "#0ABFA3" }} className="relative shrink-0" />
+                  <span className="relative font-syne text-[14px] font-bold tracking-wide text-white">
+                    {FREE_PLAN.name}
+                  </span>
+                  <ArrowUpRight size={14} className="relative text-[#0ABFA3]" />
+                </motion.a>
               </div>
             </motion.div>
           </motion.div>

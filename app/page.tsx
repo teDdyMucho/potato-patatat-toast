@@ -6,6 +6,7 @@ import { ArrowUpRight, MessageCircle, Send, X } from "lucide-react";
 import { Akt3DLogo } from "@/components/ui/akt-3d-logo";
 import { GLSLHills } from "@/components/ui/glsl-hills";
 import GhlAffiliate from "@/components/GhlAffiliate";
+import AiHandWave from "@/components/AiHandWave";
 import { TypewriterEffectSmooth } from "@/components/ui/typewriter-effect";
 import Nav from "@/components/Nav";
 import { useEffect, useRef, useState } from "react";
@@ -146,8 +147,11 @@ export default function Home() {
 
       <Nav />
 
-      {/* GoHighLevel affiliate badge — top-right */}
+      {/* GoHighLevel affiliate badge — right */}
       <GhlAffiliate />
+
+      {/* AI Tools hand wave — left */}
+      <AiHandWave />
 
       <div className="pointer-events-none absolute left-1/2 top-[34%] z-20 h-[min(46vw,46vh)] w-[min(46vw,46vh)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#0abfa3]/20 blur-3xl" />
       <Akt3DLogo className="absolute left-1/2 top-[34%] z-30 h-[min(58vw,58vh)] w-[min(68vw,68vh)] -translate-x-1/2 -translate-y-1/2" />
