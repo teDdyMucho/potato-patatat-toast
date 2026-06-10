@@ -11,6 +11,7 @@ export type BlogRow = {
   tags: string[] | null;
   read_time: string;
   image_url: string | null;
+  url: string | null;
   featured: boolean;
   published: boolean;
   published_at: string;
@@ -18,7 +19,7 @@ export type BlogRow = {
 };
 
 export const BLOG_COLUMNS =
-  "id, slug, title, excerpt, content, category, tags, read_time, image_url, featured, published, published_at, updated_at";
+  "id, slug, title, excerpt, content, category, tags, read_time, image_url, url, featured, published, published_at, updated_at";
 
 export function rowToPost(r: BlogRow): BlogPost {
   return {
@@ -31,6 +32,7 @@ export function rowToPost(r: BlogRow): BlogPost {
     tags: r.tags ?? [],
     readTime: r.read_time,
     imageUrl: r.image_url ?? null,
+    url: r.url ?? null,
     featured: r.featured,
     published: r.published,
     publishedAt: r.published_at,

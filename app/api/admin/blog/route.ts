@@ -46,6 +46,7 @@ export async function POST(request: Request) {
       tags: body.tags ?? [],
       read_time: body.readTime?.trim() ?? "",
       image_url: body.imageUrl?.trim() || null,
+      url: body.url?.trim() || null,
       featured: !!body.featured,
       published: body.published ?? true,
       published_at: body.publishedAt || new Date().toISOString(),

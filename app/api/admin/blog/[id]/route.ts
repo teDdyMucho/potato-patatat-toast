@@ -26,6 +26,7 @@ export async function PATCH(
   if (body.tags !== undefined) patch.tags = body.tags;
   if (body.readTime !== undefined) patch.read_time = body.readTime.trim();
   if (body.imageUrl !== undefined) patch.image_url = body.imageUrl?.trim() || null;
+  if (body.url !== undefined) patch.url = body.url?.trim() || null;
   if (body.featured !== undefined) patch.featured = body.featured;
   if (body.published !== undefined) patch.published = body.published;
   if (body.publishedAt !== undefined) patch.published_at = body.publishedAt;

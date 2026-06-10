@@ -24,6 +24,7 @@ export type BlogPost = {
   tags: string[];
   readTime: string;
   imageUrl: string | null;
+  url: string | null;
   featured: boolean;
   published: boolean;
   publishedAt: string;
@@ -40,6 +41,7 @@ export type BlogPostInput = {
   tags: string[];
   readTime: string;
   imageUrl?: string | null;
+  url?: string | null;
   featured: boolean;
   published: boolean;
   publishedAt?: string;

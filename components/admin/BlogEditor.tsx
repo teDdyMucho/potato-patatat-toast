@@ -15,6 +15,7 @@ type DraftData = {
   category: string; tags: string[] | string; readTime: string;
   excerpt: string; content: string; publishedAt: string;
   featured: boolean; published: boolean; imageUrl: string | null;
+  url: string;
   savedAt: string;
 };
 
@@ -67,6 +68,7 @@ export default function BlogEditor({
   const [featured, setFeatured] = useState(useDraft ? draft!.featured : (post?.featured ?? false));
   const [published, setPublished] = useState(useDraft ? draft!.published : (post?.published ?? true));
   const [imageUrl, setImageUrl] = useState<string | null>(useDraft ? draft!.imageUrl : (post?.imageUrl ?? null));
+  const [url, setUrl] = useState(useDraft ? (draft!.url ?? "") : (post?.url ?? ""));
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -81,12 +83,13 @@ export default function BlogEditor({
       const data: DraftData = {
         title, slug, slugTouched, category, tags, readTime,
         excerpt, content, publishedAt, featured, published, imageUrl,
+        url,
         savedAt: new Date().toISOString(),
       };
       try { localStorage.setItem(draftKey(post), JSON.stringify(data)); } catch {}
     }, 800);
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [title, slug, slugTouched, category, tags, readTime, excerpt, content, publishedAt, featured, published, imageUrl, post]);
+  }, [title, slug, slugTouched, category, tags, readTime, excerpt, content, publishedAt, featured, published, imageUrl, url, post]);
 
   const discardDraft = () => {
     clearDraft(post);
@@ -102,6 +105,7 @@ export default function BlogEditor({
     setFeatured(post?.featured ?? false);
     setPublished(post?.published ?? true);
     setImageUrl(post?.imageUrl ?? null);
+    setUrl(post?.url ?? "");
     setDraftRestored(false);
   };
 
@@ -155,6 +159,7 @@ export default function BlogEditor({
         excerpt: excerpt.trim(),
         content,
         imageUrl,
+        url: url.trim() || null,
         publishedAt: new Date(publishedAt).toISOString(),
         featured,
         published,
@@ -270,6 +275,14 @@ export default function BlogEditor({
             placeholder="post-url-slug"
             mono
             hint={`Public URL: /blog/${slug || "…"}`}
+          />
+
+          <FieldText
+            label="URL"
+            value={url}
+            onChange={setUrl}
+            placeholder="https://example.com/article"
+            hint="External or reference URL saved with this post (optional)"
           />
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">

@@ -2,7 +2,7 @@ import DashboardShell from "@/components/DashboardShell";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowLeft, Calendar, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, ExternalLink } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BLOG_COLUMNS, rowToPost, type BlogRow } from "@/lib/blog";
 
@@ -17,6 +17,7 @@ type Article = {
   readTime: string;
   date: string;
   imageUrl: string | null;
+  url: string | null;
 };
 
 const dateFmt = new Intl.DateTimeFormat("en-US", {
@@ -47,6 +48,7 @@ async function getArticle(slug: string): Promise<Article | null> {
         readTime: p.readTime,
         date: dateFmt.format(new Date(p.publishedAt)),
         imageUrl: p.imageUrl,
+        url: p.url,
       };
     }
   } catch {
@@ -264,12 +266,25 @@ export default async function BlogPostPage({
         <article className="bg-black py-14">
           <div className="mx-auto max-w-3xl px-6">
             {article.imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={article.imageUrl}
-                alt={article.title}
-                className="mb-10 max-h-[460px] w-full rounded-card border border-border object-cover"
-              />
+              <div className="relative mb-10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={article.imageUrl}
+                  alt={article.title}
+                  className="max-h-[460px] w-full rounded-card border border-border object-cover"
+                />
+                {article.url && (
+                  <a
+                    href={article.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-xl border border-white/20 bg-black/70 px-4 py-2.5 text-[13px] font-dm font-semibold text-white backdrop-blur-sm transition-all hover:border-[#0ABFA3]/60 hover:text-[#0ABFA3]"
+                  >
+                    <ExternalLink size={13} />
+                    Visit site
+                  </a>
+                )}
+              </div>
             )}
 
             {paragraphs.length > 0 ? (
