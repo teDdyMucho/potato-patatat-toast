@@ -120,17 +120,17 @@ export default function AccountPage() {
 
   return (
     <DashboardShell>
-      <main className="min-h-screen bg-background pb-16 pt-8">
-        <div className="mx-auto max-w-2xl px-6">
+      <main className="min-h-screen bg-background pb-12 pt-5 sm:pb-16 sm:pt-8">
+        <div className="mx-auto max-w-2xl px-4 sm:px-6">
 
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <p className="accent-bar text-[12px] font-dm font-semibold uppercase tracking-widest text-muted mb-3">
               Account Settings
             </p>
             <h1
               className="font-syne text-body"
-              style={{ fontSize: "clamp(26px, 3.5vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em" }}
+              style={{ fontSize: "clamp(22px, 3.5vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em" }}
             >
               Manage your account
             </h1>
@@ -140,15 +140,15 @@ export default function AccountPage() {
           </div>
 
           {/* Email (read-only) */}
-          <div className="mb-6 rounded-card border border-border bg-[#101113] px-5 py-4 flex items-center gap-3">
+          <div className="mb-4 sm:mb-6 rounded-card border border-border bg-[#101113] px-4 py-3 sm:px-5 sm:py-4 flex flex-wrap items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#062B26]">
               <Mail size={16} style={{ color: "#0ABFA3" }} strokeWidth={1.75} />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-[11px] font-dm font-semibold uppercase tracking-wide text-muted">Email</p>
-              <p className="text-[14px] font-dm font-medium text-body">{user.email}</p>
+              <p className="truncate text-[13px] sm:text-[14px] font-dm font-medium text-body">{user.email}</p>
             </div>
-            <span className="ml-auto text-[11px] font-dm text-muted/60">Cannot be changed</span>
+            <span className="text-[11px] font-dm text-muted/60">Cannot be changed</span>
           </div>
 
           {/* ── Update Name ── */}
@@ -156,7 +156,7 @@ export default function AccountPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35 }}
-            className="mb-6 rounded-card border border-border bg-[#101113] p-6"
+            className="mb-4 sm:mb-6 rounded-card border border-border bg-[#101113] p-4 sm:p-6"
           >
             <div className="mb-5 flex items-center gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#062B26]">
@@ -188,7 +188,7 @@ export default function AccountPage() {
                 <p className="text-[13px] font-dm text-red-400" role="alert">{nameError}</p>
               )}
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <motion.button
                   type="submit"
                   disabled={nameLoading || name.trim() === user.name}
@@ -219,7 +219,7 @@ export default function AccountPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.1 }}
-            className="rounded-card border border-border bg-[#101113] p-6"
+            className="rounded-card border border-border bg-[#101113] p-4 sm:p-6"
           >
             <div className="mb-5 flex items-center gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#062B26]">
@@ -264,7 +264,7 @@ export default function AccountPage() {
                 <p className="text-[13px] font-dm text-red-400" role="alert">{pwError}</p>
               )}
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <motion.button
                   type="submit"
                   disabled={pwLoading || !currentPassword || !newPassword || !confirmPassword}

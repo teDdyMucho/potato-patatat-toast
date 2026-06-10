@@ -17,6 +17,7 @@ import {
   LogOut,
   Mail,
   Megaphone,
+  Menu,
   MessageSquare,
   Settings,
   Sparkles,
@@ -71,9 +72,11 @@ export default function DashboardPage() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [showCta, setShowCta] = useState(() => !isCtaDismissed());
   const [sidebarOpen, setSidebarOpen] = useState(() => sidebarState.open);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const toggleSidebar = () => setSidebarOpen(sidebarState.toggle());
+  const closeMobileDrawer = () => setMobileDrawerOpen(false);
 
   useEffect(() => {
     if (!ready) return;
@@ -108,6 +111,12 @@ export default function DashboardPage() {
   useEffect(() => { checkReview(); }, [checkReview]);
   useEffect(() => recentTools.subscribe(() => setRecent([...recentTools.list])), []);
 
+  useEffect(() => {
+    const handler = () => { if (window.innerWidth >= 1024) setMobileDrawerOpen(false); };
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+
   // Close user menu on outside click
   useEffect(() => {
     if (!userMenuOpen) return;
@@ -123,11 +132,123 @@ export default function DashboardPage() {
   const filtered = activeCategory === "All" ? tools : tools.filter((t) => t.category === activeCategory);
 
   return (
-    <div className="relative flex h-screen bg-[#050608]">
+    <div className="relative flex h-screen flex-col bg-[#050608] lg:flex-row">
 
-      {/* ══════════ SIDEBAR ══════════ */}
+      {/* ── Mobile top bar ── */}
+      <header className="flex shrink-0 items-center justify-between border-b border-white/[0.07] bg-[#07080a] px-4 py-3 lg:hidden">
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <Image src="/image/akt_logo.png" alt="AKT" width={421} height={377} className="h-8 w-auto" />
+          <div className="leading-none">
+            <p className="font-syne text-[13px] font-extrabold tracking-wide text-white">AKT</p>
+            <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/40">Workspace</p>
+          </div>
+        </Link>
+        <div className="flex items-center gap-2">
+          <span className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-dm font-semibold text-white/60">AI Tools</span>
+          <button
+            onClick={() => setMobileDrawerOpen(true)}
+            aria-label="Open menu"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white"
+          >
+            <Menu size={18} />
+          </button>
+        </div>
+      </header>
+
+      {/* ── Mobile drawer overlay ── */}
+      <AnimatePresence>
+        {mobileDrawerOpen && (
+          <>
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
+              onClick={closeMobileDrawer}
+            />
+            <motion.aside
+              key="drawer"
+              initial={{ x: -300 }}
+              animate={{ x: 0 }}
+              exit={{ x: -300 }}
+              transition={{ type: "spring", stiffness: 380, damping: 35 }}
+              className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-white/[0.07] bg-[#07080a] shadow-2xl lg:hidden"
+            >
+              <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
+                <Link href="/dashboard" onClick={closeMobileDrawer} className="flex items-center gap-3">
+                  <Image src="/image/akt_logo.png" alt="AKT" width={421} height={377} className="h-9 w-auto" />
+                  <div className="leading-none">
+                    <p className="font-syne text-[14px] font-extrabold tracking-wide text-white">AKT</p>
+                    <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/40">Workspace</p>
+                  </div>
+                </Link>
+                <button onClick={closeMobileDrawer} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 text-white/50 transition-colors hover:text-white">
+                  <X size={16} />
+                </button>
+              </div>
+              <nav className="flex flex-col flex-1 overflow-y-auto py-4 px-3">
+                <div className="space-y-1">
+                  <SidebarItem icon={Bot} label="AI Tools" href="/dashboard" active onClick={closeMobileDrawer} />
+                  {hasReview && (
+                    <SidebarItem icon={Briefcase} label="Project Review" href="/review" badge={pendingCount > 0 ? String(pendingCount) : undefined} onClick={closeMobileDrawer} />
+                  )}
+                  <SidebarItem icon={Newspaper} label="Blog" href="/blog" onClick={closeMobileDrawer} />
+                  <SidebarItem icon={CalendarCheck} label="Consultation" href="/contact" onClick={closeMobileDrawer} />
+                </div>
+                {recent.length > 0 && (
+                  <div className="mt-4">
+                    <div className="mb-2 flex items-center gap-2 px-1">
+                      <div className="h-px flex-1 bg-white/[0.06]" />
+                      <span className="text-[10px] font-dm font-semibold uppercase tracking-[0.15em] text-white/25">Recent</span>
+                      <div className="h-px flex-1 bg-white/[0.06]" />
+                    </div>
+                    <div className="space-y-0.5">
+                      {recent.map((t) => (
+                        <Link key={t.name} href={t.href} onClick={closeMobileDrawer} className="flex items-center gap-2.5 rounded-xl px-3 py-2 transition-colors hover:bg-white/[0.04]">
+                          <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: "#0ABFA3" }} />
+                          <span className="truncate text-[12px] font-dm text-white/45">{t.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {showCta && (
+                  <div className="mt-auto pt-4">
+                    <div className="relative rounded-xl border p-4" style={{ background: "#062B26", borderColor: "#155E53" }}>
+                      <button onClick={() => { dismissCta(); setShowCta(false); }} className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/10 hover:text-white/70" aria-label="Dismiss">
+                        <X size={11} />
+                      </button>
+                      <p className="font-syne text-[13px] font-bold text-white leading-snug mb-1 pr-5">Want AKT to build this for your business?</p>
+                      <p className="text-[11px] font-dm text-white/50 mb-3 leading-relaxed">Book a free consultation and we&apos;ll map out how AKT can help.</p>
+                      <Link href="/contact" onClick={closeMobileDrawer} className="inline-flex w-full items-center justify-center rounded-lg py-2 text-[12px] font-dm font-semibold text-white transition-opacity hover:opacity-90" style={{ background: "#0ABFA3" }}>
+                        Book a free consultation
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </nav>
+              <div className="border-t border-white/[0.07] p-3">
+                <Link href="/account" onClick={closeMobileDrawer} className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-white/[0.05]">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#062B26]">
+                    <UserRound size={15} style={{ color: "#0ABFA3" }} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[12px] font-dm font-semibold text-white">{user.name.split(" ")[0]}</p>
+                    <p className="truncate text-[10px] font-dm text-muted">{user.email}</p>
+                  </div>
+                  <Settings size={13} className="shrink-0 text-muted" />
+                </Link>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ══════════ SIDEBAR (desktop only) ══════════ */}
       <aside
-        className="relative flex shrink-0 flex-col border-r border-white/[0.07] bg-[#07080a] transition-[width] duration-300 ease-in-out"
+        className="relative hidden shrink-0 flex-col border-r border-white/[0.07] bg-[#07080a] transition-[width] duration-300 ease-in-out lg:flex"
         style={{ width: sidebarOpen ? 220 : 0, overflow: "hidden", minWidth: 0 }}
       >
         <div style={{ width: 220, minWidth: 220 }} className="flex h-full flex-col overflow-hidden">
@@ -269,11 +390,11 @@ export default function DashboardPage() {
         </div> {/* end inner fixed-width div */}
       </aside>
 
-      {/* Toggle button — on the sidebar border, centered vertically */}
+      {/* Toggle button — desktop only */}
       <button
         onClick={toggleSidebar}
         aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-        className="absolute z-30 flex items-center justify-center text-white/50 transition-[left,color] duration-300 hover:text-white"
+        className="absolute z-30 hidden items-center justify-center text-white/50 transition-[left,color] duration-300 hover:text-white lg:flex"
         style={{
           left: sidebarOpen ? 220 : 0,
           top: "50%",
@@ -293,11 +414,11 @@ export default function DashboardPage() {
       <div className="flex flex-1 flex-col overflow-hidden">
 
         {/* Welcome header */}
-        <header className="relative shrink-0 overflow-hidden border-b border-white/[0.06] bg-[#070809] px-8 py-8">
+        <header className="relative shrink-0 overflow-hidden border-b border-white/[0.06] bg-[#070809] px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
           <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full opacity-10" style={{ background: "radial-gradient(circle, #0ABFA3 0%, transparent 70%)" }} />
           <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
             <p className="mb-1 text-[11px] font-dm font-semibold uppercase tracking-widest" style={{ color: "#0ABFA3" }}>Your Workspace</p>
-            <h1 className="font-syne text-[26px] font-extrabold text-white" style={{ letterSpacing: "-0.02em" }}>
+            <h1 className="font-syne font-extrabold text-white" style={{ fontSize: "clamp(18px, 4vw, 26px)", letterSpacing: "-0.02em" }}>
               {greeting(user.name)}
             </h1>
             <p className="mt-1 text-[13px] font-dm text-muted">Your AI tools are ready. Pick up where you left off.</p>
@@ -320,7 +441,7 @@ export default function DashboardPage() {
         </header>
 
         {/* Tools area */}
-        <div className="flex-1 overflow-y-auto px-8 py-8">
+        <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.1 }}>
 
             {/* Category pills */}
@@ -403,16 +524,19 @@ function SidebarItem({
   href,
   active = false,
   badge,
+  onClick,
 }: {
   icon: React.ElementType;
   label: string;
   href: string;
   active?: boolean;
   badge?: string;
+  onClick?: () => void;
 }) {
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-dm font-semibold transition-all ${
         active
           ? "bg-[#0ABFA3]/10 text-[#0ABFA3]"
