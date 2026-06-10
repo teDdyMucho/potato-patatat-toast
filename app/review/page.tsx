@@ -101,7 +101,7 @@ export default function ReviewPage() {
   return (
     <DashboardShell noScroll>
       <main className="flex flex-1 flex-col overflow-hidden px-4 pt-8 pb-4 sm:px-6 lg:px-10">
-        {isStaff || isAdmin ? <WorkerView user={user} /> : <ClientView user={user} />}
+        {isStaff || isAdmin ? <WorkerView /> : <ClientView />}
       </main>
     </DashboardShell>
   );
@@ -110,7 +110,7 @@ export default function ReviewPage() {
 /* ══════════════════════════════════════
    WORKER VIEW  (staff / admin)
 ══════════════════════════════════════ */
-function WorkerView({ user }: { user: { id: string; email: string; name: string } }) {
+function WorkerView() {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
@@ -149,7 +149,7 @@ function WorkerView({ user }: { user: { id: string; email: string; name: string 
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const toggleThread = (id: string) => setExpandedProjects((prev) => {
     const s = new Set(prev);
-    s.has(id) ? s.delete(id) : s.add(id);
+    if (s.has(id)) { s.delete(id); } else { s.add(id); }
     return s;
   });
 
@@ -720,7 +720,7 @@ function WorkerView({ user }: { user: { id: string; email: string; name: string 
 /* ══════════════════════════════════════
    CLIENT VIEW  (regular users)
 ══════════════════════════════════════ */
-function ClientView({ user: _user }: { user: { id: string; email: string; name: string } }) {
+function ClientView() {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
@@ -735,7 +735,7 @@ function ClientView({ user: _user }: { user: { id: string; email: string; name: 
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const toggleThread = (id: string) => setExpandedProjects((prev) => {
     const s = new Set(prev);
-    s.has(id) ? s.delete(id) : s.add(id);
+    if (s.has(id)) { s.delete(id); } else { s.add(id); }
     return s;
   });
 
