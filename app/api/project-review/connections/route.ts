@@ -17,14 +17,6 @@ export async function GET() {
   // Use the admin client to bypass RLS — we do our own auth checks above
   const admin = createSupabaseAdminClient();
 
-  // Get the caller's role so we know whether to include the staff-wide queue
-  const { data: callerProfile } = await admin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  const callerRole = (callerProfile?.role as string) ?? "user";
-
   const [workerRes, clientRes] = await Promise.all([
     admin
       .from("project_review_connections")
@@ -41,29 +33,10 @@ export async function GET() {
   const workerConns = workerRes.data ?? [];
   const clientConns = clientRes.data ?? [];
 
-  // For regular users: also fetch ALL connections from staff/admin workers so
-  // they can see every staff member's submissions in the review queue.
-  let staffConns: unknown[] = [];
-  if (!["staff", "admin"].includes(callerRole)) {
-    const { data: staffProfiles } = await admin
-      .from("profiles")
-      .select("id")
-      .in("role", ["staff", "admin"]);
-    const staffIds = (staffProfiles ?? []).map((p: { id: string }) => p.id);
-    if (staffIds.length > 0) {
-      const { data: staffConnData } = await admin
-        .from("project_review_connections")
-        .select("*")
-        .in("worker_id", staffIds)
-        .order("created_at", { ascending: false });
-      staffConns = staffConnData ?? [];
-    }
-  }
-
   // Gather all connection IDs so we can fetch their projects in one query
   const seenIds = new Set<string>();
   const allIds: string[] = [];
-  for (const conns of [workerConns, clientConns, staffConns]) {
+  for (const conns of [workerConns, clientConns]) {
     for (const c of conns as { id: string }[]) {
       if (!seenIds.has(c.id)) { seenIds.add(c.id); allIds.push(c.id); }
     }
@@ -96,7 +69,6 @@ export async function GET() {
   return NextResponse.json({
     workerConnections: attachProjects(workerConns),
     clientConnections: attachProjects(clientConns),
-    staffConnections: attachProjects(staffConns),
   });
 }
 

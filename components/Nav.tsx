@@ -36,7 +36,6 @@ const links = [
   },
   { label: "Partners", href: "/partners", value: "partners", icon: Handshake },
   { label: "AI Tools", href: "/ai-tools", value: "ai-tools", icon: Bot },
-  { label: "Review", href: "/review", value: "review", icon: ClipboardList },
   { label: "Blog", href: "/blog", value: "blog", icon: Newspaper },
 ];
 
@@ -45,6 +44,7 @@ function activeValue(pathname: string) {
   if (pathname.startsWith("/about")) return "about";
   if (pathname.startsWith("/services")) return "services";
   if (pathname.startsWith("/partners")) return "partners";
+  if (pathname.startsWith("/dashboard")) return "ai-tools";
   if (pathname.startsWith("/ai-tools")) return "ai-tools";
   if (pathname.startsWith("/review")) return "review";
   if (pathname.startsWith("/blog")) return "blog";
@@ -64,7 +64,7 @@ function headerTitle(pathname: string): string | null {
 
 export default function Nav() {
   const pathname = usePathname();
-  const { user, ready, isAdmin, logout } = useAuth();
+  const { user, ready, isAdmin, isStaff, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -72,6 +72,13 @@ export default function Nav() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const current = activeValue(pathname);
   const title = headerTitle(pathname);
+
+  // Regular users get the personalised dashboard; admin/staff stay on the public AI Tools page
+  const navLinks = links.map((l) =>
+    l.value === "ai-tools"
+      ? { ...l, href: ready && user && !isAdmin && !isStaff ? "/dashboard" : "/ai-tools" }
+      : l,
+  );
 
   // Close the user dropdown when clicking outside it.
   useEffect(() => {
@@ -137,7 +144,12 @@ export default function Nav() {
         <div className="flex min-w-0 items-center justify-self-center">
           <Tabs value={current} className="hidden lg:block">
           <TabsList className="h-auto items-stretch gap-2 rounded-none bg-transparent p-0 lg:gap-5">
-            {links.map((link) => {
+            {[
+              ...navLinks,
+              ...(ready && (isStaff || isAdmin)
+                ? [{ label: "Review", href: "/review", value: "review", icon: ClipboardList }]
+                : []),
+            ].map((link) => {
               const Icon = link.icon;
 
               return (
@@ -269,7 +281,12 @@ export default function Nav() {
       {open && (
         <div className="animate-fade-in border-t border-white/10 bg-[#0c0c0e]/95 px-4 pb-[calc(env(safe-area-inset-bottom)+20px)] pt-3 shadow-2xl shadow-black/60 backdrop-blur-md lg:hidden">
           <nav className="grid gap-1.5">
-            {links.map((link) => {
+            {[
+              ...navLinks,
+              ...(ready && (isStaff || isAdmin)
+                ? [{ label: "Review", href: "/review", value: "review", icon: ClipboardList }]
+                : []),
+            ].map((link) => {
               const Icon = link.icon;
               const active = current === link.value;
               return (

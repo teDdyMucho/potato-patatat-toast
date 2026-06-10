@@ -1,5 +1,4 @@
-import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
+import DashboardShell from "@/components/DashboardShell";
 import { Calendar, ArrowUpRight, Clock } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -83,8 +82,7 @@ export default async function BlogPage() {
   const rest = posts.filter((p) => !p.featured);
 
   return (
-    <>
-      <Nav />
+    <DashboardShell>
       <style>{`
         @keyframes tagScroll {
           from { transform: translateX(0); }
@@ -102,7 +100,7 @@ export default async function BlogPage() {
           animation-play-state: paused;
         }
       `}</style>
-      <main className="pt-16">
+      <main>
         {/* Hero */}
         <section className="py-16 bg-[#101113] border-b border-border">
           <div className="max-w-7xl mx-auto px-6">
@@ -299,42 +297,7 @@ export default async function BlogPage() {
           </div>
         </section>
 
-        {/* Newsletter CTA */}
-        <section className="py-16 bg-[#101113] border-t border-border">
-          <div className="max-w-7xl mx-auto px-6">
-            <div
-              className="rounded-card p-10 text-center border"
-              style={{ background: "#062B26", borderColor: "#155E53" }}
-            >
-              <h3
-                className="font-syne text-body text-[22px] font-bold mb-2"
-                style={{ letterSpacing: "-0.01em" }}
-              >
-                Monthly AI in Business Newsletter
-              </h3>
-              <p className="text-[15px] font-dm text-muted mb-7 max-w-md mx-auto">
-                Get the best AI automation insights, VA industry news, and
-                practical growth tips — delivered monthly. Free.
-              </p>
-              <form className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  className="flex-1 px-4 py-3 rounded-md border border-border text-[14px] font-dm text-body focus:outline-none focus:border-primary transition-colors"
-                />
-                <button
-                  type="submit"
-                  className="px-6 py-3 rounded-md text-[14px] font-dm font-semibold text-white transition-colors whitespace-nowrap"
-                  style={{ background: "#0ABFA3" }}
-                >
-                  Subscribe Free
-                </button>
-              </form>
-            </div>
-          </div>
-        </section>
       </main>
-      <Footer />
-    </>
+    </DashboardShell>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Nav from "@/components/Nav";
@@ -169,8 +169,13 @@ const categories = [
 
 export default function AIToolsPage() {
   const router = useRouter();
-  const { user, ready } = useAuth();
+  const { user, ready, isAdmin, isStaff } = useAuth();
   const [active, setActive] = useState("All");
+
+  // Regular users get the personalised dashboard; admin/staff stay on this page
+  useEffect(() => {
+    if (ready && user && !isAdmin && !isStaff) router.replace("/dashboard");
+  }, [ready, user, isAdmin, isStaff, router]);
 
   const filtered =
     active === "All" ? tools : tools.filter((t) => t.category === active);

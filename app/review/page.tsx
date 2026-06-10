@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase,
   CheckCircle,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -14,6 +15,7 @@ import {
   Loader2,
   Paperclip,
   Pencil,
+  Send,
   Trash2,
   Upload,
   UserPlus,
@@ -21,8 +23,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
+import DashboardShell from "@/components/DashboardShell";
 import { useAuth } from "@/lib/auth";
 
 const PAGE_PATH = "/review";
@@ -57,6 +58,24 @@ type Connection = {
 
 type FileEntry = { url: string; name: string; type?: string };
 
+type Reply = {
+  id: string;
+  project_id: string;
+  user_id: string;
+  user_email: string;
+  sender_role: "worker" | "client";
+  message: string;
+  created_at: string;
+};
+
+function formatTime(iso: string): string {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
 function parseFiles(project: Project): FileEntry[] {
   if (!project.file_url) return [];
   try {
@@ -80,13 +99,11 @@ export default function ReviewPage() {
   if (!ready || !user) return null;
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#050608]">
-      <Nav />
-      <main className="flex flex-1 flex-col px-4 pb-16 pt-[88px] sm:px-6 lg:px-10">
+    <DashboardShell noScroll>
+      <main className="flex flex-1 flex-col overflow-hidden px-4 pt-8 pb-4 sm:px-6 lg:px-10">
         {isStaff || isAdmin ? <WorkerView user={user} /> : <ClientView user={user} />}
       </main>
-      <Footer />
-    </div>
+    </DashboardShell>
   );
 }
 
@@ -125,6 +142,17 @@ function WorkerView({ user }: { user: { id: string; email: string; name: string 
   // Preview
   const [previewFile, setPreviewFile] = useState<{ files: FileEntry[]; index: number } | null>(null);
 
+  // Replies
+  const [replyMap, setReplyMap] = useState<Record<string, Reply[]>>({});
+  const [replyInputMap, setReplyInputMap] = useState<Record<string, string>>({});
+  const [sendingReply, setSendingReply] = useState<string | null>(null);
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+  const toggleThread = (id: string) => setExpandedProjects((prev) => {
+    const s = new Set(prev);
+    s.has(id) ? s.delete(id) : s.add(id);
+    return s;
+  });
+
   const fetchConnections = useCallback(async () => {
     setLoading(true);
     try {
@@ -140,6 +168,42 @@ function WorkerView({ user }: { user: { id: string; email: string; name: string 
   }, []);
 
   useEffect(() => { fetchConnections(); }, [fetchConnections]);
+
+  const fetchReplies = useCallback(async (connectionId: string) => {
+    try {
+      const res = await fetch(`/api/project-review/replies?connectionId=${connectionId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const map: Record<string, Reply[]> = {};
+        for (const reply of (data.replies ?? []) as Reply[]) {
+          if (!map[reply.project_id]) map[reply.project_id] = [];
+          map[reply.project_id].push(reply);
+        }
+        setReplyMap(map);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => { if (selected) fetchReplies(selected); }, [selected, fetchReplies]);
+
+  const handleSendReply = async (projectId: string, senderRole: "worker" | "client") => {
+    const message = replyInputMap[projectId]?.trim();
+    if (!message) return;
+    setSendingReply(projectId);
+    try {
+      const res = await fetch("/api/project-review/replies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, message, senderRole }),
+      });
+      if (res.ok) {
+        const { reply } = await res.json();
+        setReplyMap((prev) => ({ ...prev, [projectId]: [...(prev[projectId] ?? []), reply] }));
+        setReplyInputMap((prev) => ({ ...prev, [projectId]: "" }));
+      }
+    } catch {}
+    finally { setSendingReply(null); }
+  };
 
   const handleAddClient = async () => {
     if (!newClientEmail.trim()) return;
@@ -246,11 +310,10 @@ function WorkerView({ user }: { user: { id: string; email: string; name: string 
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex gap-5"
-          style={{ height: "calc(100vh - 18rem)", minHeight: 480 }}
+          className="flex flex-1 min-h-0 gap-5"
         >
           {/* Sidebar */}
-          <aside className="relative flex w-64 shrink-0 flex-col rounded-2xl border border-[#155E53]/40 bg-[#0b0d10]/80 shadow-[0_0_40px_rgba(10,191,163,0.04)]">
+          <aside className="relative flex w-64 shrink-0 flex-col overflow-hidden rounded-2xl border border-[#155E53]/40 bg-[#0b0d10]/80 shadow-[0_0_40px_rgba(10,191,163,0.04)]">
             <Corners />
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <div className="flex items-center gap-2">
@@ -399,53 +462,130 @@ function WorkerView({ user }: { user: { id: string; email: string; name: string 
                     <p className="mt-1 text-[13px] font-dm text-muted">Click &quot;Upload Project&quot; to submit work for this client.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {activeConn.projects.map((p) => (
-                      <div key={p.id} className="relative rounded-2xl border border-[#155E53]/40 bg-[#0b0d10]/80 p-5 shadow-[0_0_40px_rgba(10,191,163,0.04)]">
+                      <div key={p.id} className="relative overflow-hidden rounded-2xl border border-[#155E53]/40 bg-[#0b0d10]/80 shadow-[0_0_40px_rgba(10,191,163,0.04)]">
                         <Corners />
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="flex min-w-0 items-start gap-3">
-                            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ background: "#062B26" }}>
-                              <FileText size={14} style={{ color: "#0ABFA3" }} />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-dm font-semibold text-body text-[14px]">{p.title}</p>
-                              {p.description && <p className="mt-0.5 text-[12px] font-dm text-muted leading-relaxed">{p.description}</p>}
-                              {parseFiles(p).length > 0 && (
-                                <div className="mt-1.5 flex flex-col gap-0.5">
-                                  {parseFiles(p).map((f, fi) => (
-                                    <button key={fi} onClick={() => setPreviewFile({ files: parseFiles(p), index: fi })} className="inline-flex items-center gap-1 text-[11px] font-dm text-[#0ABFA3] hover:underline text-left">
-                                      <Paperclip size={10} />{f.name}
-                                    </button>
-                                  ))}
+                        {/* Card header */}
+                        <div className="p-5">
+                          <div className="mb-1 flex items-start justify-between gap-3">
+                            <div className="flex min-w-0 items-start gap-3">
+                              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: "#062B26" }}>
+                                <FileText size={16} style={{ color: "#0ABFA3" }} />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="font-syne text-[15px] font-bold text-body" style={{ letterSpacing: "-0.01em" }}>{p.title}</p>
+                                  <StatusPill status={p.status} />
                                 </div>
-                              )}
-                              {p.client_feedback && (
-                                <p className="mt-2 rounded-lg border border-border bg-black/40 px-2.5 py-1.5 text-[11px] font-dm italic text-muted">
-                                  <span className="not-italic text-[#7fffee]">Feedback: </span>{p.client_feedback}
-                                </p>
+                                {p.description && <p className="mt-1 text-[12px] font-dm text-muted leading-relaxed">{p.description}</p>}
+                              </div>
+                            </div>
+                            <div className="shrink-0">
+                              {confirmDeleteId === p.id ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[11px] font-dm text-muted">Delete?</span>
+                                  <button onClick={() => deleteProject(p.id)} className="rounded-lg border border-red-500/40 bg-red-500/10 px-2.5 py-1 text-[11px] font-dm font-semibold text-red-400 hover:bg-red-500/20">Yes</button>
+                                  <button onClick={() => setConfirmDeleteId(null)} className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-dm font-semibold text-muted hover:text-body">No</button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setConfirmDeleteId(p.id)}
+                                  disabled={deletingId === p.id}
+                                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-red-500/40 hover:text-red-400 disabled:opacity-40"
+                                >
+                                  {deletingId === p.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                                </button>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <StatusPill status={p.status} />
-                            {confirmDeleteId === p.id ? (
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[11px] font-dm text-muted">Delete?</span>
-                                <button onClick={() => deleteProject(p.id)} className="rounded-lg border border-red-500/40 bg-red-500/10 px-2.5 py-1 text-[11px] font-dm font-semibold text-red-400 hover:bg-red-500/20">Yes</button>
-                                <button onClick={() => setConfirmDeleteId(null)} className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-dm font-semibold text-muted hover:text-body">No</button>
+                          {parseFiles(p).length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-1.5">
+                              {parseFiles(p).map((f, fi) => (
+                                <button key={fi} onClick={() => setPreviewFile({ files: parseFiles(p), index: fi })} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-black/30 px-2.5 py-1.5 text-[11px] font-dm text-muted transition-colors hover:border-[#0ABFA3]/50 hover:text-[#0ABFA3]">
+                                  <Paperclip size={10} />{f.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Feedback thread — visible once client has reviewed */}
+                        {p.status !== "pending" && (
+                          <div className="border-t border-white/[0.06] bg-black/20">
+                            {/* Always-visible: client feedback + expand toggle */}
+                            <div className="flex items-start gap-3 px-5 pt-4 pb-3">
+                              <div className="flex min-w-0 flex-1 gap-2.5">
+                                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-[9px] font-bold text-amber-400">C</div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="mb-1 text-[10px] font-dm font-semibold text-amber-400">Client</p>
+                                  {p.client_feedback ? (
+                                    <div className="rounded-xl rounded-tl-none border border-border bg-black/40 px-3 py-2.5">
+                                      <p className="text-[12px] font-dm leading-relaxed text-body">{p.client_feedback}</p>
+                                    </div>
+                                  ) : (
+                                    <p className="text-[11px] font-dm italic text-muted">No feedback left</p>
+                                  )}
+                                </div>
                               </div>
-                            ) : (
                               <button
-                                onClick={() => setConfirmDeleteId(p.id)}
-                                disabled={deletingId === p.id}
-                                className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-red-500/40 hover:text-red-400 disabled:opacity-40"
+                                onClick={() => toggleThread(p.id)}
+                                className="mt-5 flex shrink-0 items-center gap-1 rounded-lg border border-border px-2 py-1 text-[11px] font-dm text-muted transition-colors hover:border-[#0ABFA3]/40 hover:text-[#0ABFA3]"
                               >
-                                {deletingId === p.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                                {(replyMap[p.id]?.length ?? 0) > 0 && (
+                                  <span className="font-semibold">{replyMap[p.id].length}</span>
+                                )}
+                                <ChevronDown size={12} className={`transition-transform duration-200 ${expandedProjects.has(p.id) ? "rotate-180" : ""}`} />
                               </button>
+                            </div>
+
+                            {/* Expanded: replies + reply input */}
+                            {expandedProjects.has(p.id) && (
+                              <>
+                                {(replyMap[p.id] ?? []).length > 0 && (
+                                  <div className="space-y-3 px-5 pb-3">
+                                    {(replyMap[p.id] ?? []).map((reply) => (
+                                      <div key={reply.id} className="flex gap-2.5">
+                                        <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${reply.sender_role === "worker" ? "bg-[#0ABFA3]/20 text-[#0ABFA3]" : "bg-amber-500/20 text-amber-400"}`}>
+                                          {reply.sender_role === "worker" ? "W" : "C"}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                          <div className="mb-1 flex items-center justify-between gap-2">
+                                            <span className={`text-[10px] font-dm font-semibold ${reply.sender_role === "worker" ? "text-[#0ABFA3]" : "text-amber-400"}`}>
+                                              {reply.sender_role === "worker" ? "You" : "Client"}
+                                            </span>
+                                            <span className="text-[10px] font-dm text-muted">{formatTime(reply.created_at)}</span>
+                                          </div>
+                                          <div className="rounded-xl rounded-tl-none border border-border bg-black/40 px-3 py-2.5">
+                                            <p className="text-[12px] font-dm leading-relaxed text-body">{reply.message}</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-2 p-3 pt-0">
+                                  <input
+                                    type="text"
+                                    value={replyInputMap[p.id] ?? ""}
+                                    onChange={(e) => setReplyInputMap((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSendReply(p.id, "worker"); } }}
+                                    placeholder="Reply to client…"
+                                    className="flex-1 rounded-xl border border-border bg-black/40 px-3.5 py-2.5 text-[12px] font-dm text-body placeholder:text-muted/50 transition-colors focus:border-[#0ABFA3] focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/20"
+                                  />
+                                  <button
+                                    onClick={() => handleSendReply(p.id, "worker")}
+                                    disabled={sendingReply === p.id || !(replyInputMap[p.id]?.trim())}
+                                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-opacity hover:opacity-90 disabled:opacity-35"
+                                    style={{ background: "#0ABFA3" }}
+                                  >
+                                    {sendingReply === p.id ? <Loader2 size={14} className="animate-spin text-white" /> : <Send size={14} className="text-white" />}
+                                  </button>
+                                </div>
+                              </>
                             )}
                           </div>
-                        </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -589,6 +729,15 @@ function ClientView({ user: _user }: { user: { id: string; email: string; name: 
   const [previewFile, setPreviewFile] = useState<{ files: FileEntry[]; index: number } | null>(null);
   const [renamingConnId, setRenamingConnId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [replyMap, setReplyMap] = useState<Record<string, Reply[]>>({});
+  const [replyInputMap, setReplyInputMap] = useState<Record<string, string>>({});
+  const [sendingReply, setSendingReply] = useState<string | null>(null);
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+  const toggleThread = (id: string) => setExpandedProjects((prev) => {
+    const s = new Set(prev);
+    s.has(id) ? s.delete(id) : s.add(id);
+    return s;
+  });
 
   const fetchConnections = useCallback(async () => {
     setLoading(true);
@@ -596,12 +745,7 @@ function ClientView({ user: _user }: { user: { id: string; email: string; name: 
       const res = await fetch("/api/project-review/connections");
       if (res.ok) {
         const data = await res.json();
-        // staffConnections = all connections from staff/admin workers (shared review queue)
-        // fall back to personal clientConnections if no staff queue returned
-        const conns: Connection[] =
-          (data.staffConnections ?? []).length > 0
-            ? data.staffConnections
-            : (data.clientConnections ?? []);
+        const conns: Connection[] = data.clientConnections ?? [];
         setConnections(conns);
         if (conns.length > 0) setSelected((s) => s ?? conns[0].id);
       }
@@ -610,6 +754,42 @@ function ClientView({ user: _user }: { user: { id: string; email: string; name: 
   }, []);
 
   useEffect(() => { fetchConnections(); }, [fetchConnections]);
+
+  const fetchReplies = useCallback(async (connectionId: string) => {
+    try {
+      const res = await fetch(`/api/project-review/replies?connectionId=${connectionId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const map: Record<string, Reply[]> = {};
+        for (const reply of (data.replies ?? []) as Reply[]) {
+          if (!map[reply.project_id]) map[reply.project_id] = [];
+          map[reply.project_id].push(reply);
+        }
+        setReplyMap(map);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => { if (selected) fetchReplies(selected); }, [selected, fetchReplies]);
+
+  const handleSendReply = async (projectId: string, senderRole: "worker" | "client") => {
+    const message = replyInputMap[projectId]?.trim();
+    if (!message) return;
+    setSendingReply(projectId);
+    try {
+      const res = await fetch("/api/project-review/replies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, message, senderRole }),
+      });
+      if (res.ok) {
+        const { reply } = await res.json();
+        setReplyMap((prev) => ({ ...prev, [projectId]: [...(prev[projectId] ?? []), reply] }));
+        setReplyInputMap((prev) => ({ ...prev, [projectId]: "" }));
+      }
+    } catch {}
+    finally { setSendingReply(null); }
+  };
 
   const handleReview = async (projectId: string, status: "approved" | "declined") => {
     setReviewingProjectId(projectId);
@@ -681,11 +861,11 @@ function ClientView({ user: _user }: { user: { id: string; email: string; name: 
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: "#062B26" }}>
             <Briefcase size={24} style={{ color: "#0ABFA3" }} />
           </div>
-          <p className="text-[15px] font-dm font-semibold text-body">No projects yet</p>
-          <p className="mt-1 max-w-xs text-[13px] font-dm text-muted">Once a worker connects with your email and submits a project, it will appear here.</p>
+          <p className="text-[15px] font-dm font-semibold text-body">No projects assigned yet</p>
+          <p className="mt-1 max-w-xs text-[13px] font-dm text-muted">You&apos;ll see projects here once a staff member tags you as a client and submits work for your review.</p>
         </motion.div>
       ) : (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-5" style={{ height: "calc(100vh - 18rem)", minHeight: 480 }}>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-1 min-h-0 gap-5">
           {/* Sidebar */}
           <aside className="relative flex w-64 shrink-0 flex-col rounded-2xl border border-[#155E53]/40 bg-[#0b0d10]/80 shadow-[0_0_40px_rgba(10,191,163,0.04)]">
             <Corners />
@@ -823,10 +1003,79 @@ function ClientView({ user: _user }: { user: { id: string; email: string; name: 
                               </div>
                             </div>
                           )}
-                          {project.status !== "pending" && project.client_feedback && (
-                            <div className="mt-3 rounded-xl border border-border bg-black/40 px-3.5 py-3">
-                              <p className="mb-1 text-[11px] font-dm font-semibold uppercase tracking-wider text-muted">Your Feedback</p>
-                              <p className="text-[13px] font-dm leading-relaxed text-body">{project.client_feedback}</p>
+                          {project.status !== "pending" && (
+                            <div className="mt-4 border-t border-white/[0.06] pt-4">
+                              {/* Always-visible: your feedback + expand toggle */}
+                              <div className="flex items-start gap-3">
+                                <div className="flex min-w-0 flex-1 gap-2.5">
+                                  <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#0ABFA3]/20 text-[9px] font-bold text-[#0ABFA3]">Y</div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="mb-1 text-[10px] font-dm font-semibold text-[#0ABFA3]">Your Feedback</p>
+                                    {project.client_feedback ? (
+                                      <div className="rounded-xl rounded-tl-none border border-border bg-black/40 px-3 py-2.5">
+                                        <p className="text-[12px] font-dm leading-relaxed text-body">{project.client_feedback}</p>
+                                      </div>
+                                    ) : (
+                                      <p className="text-[11px] font-dm italic text-muted">No feedback submitted</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => toggleThread(project.id)}
+                                  className="mt-5 flex shrink-0 items-center gap-1 rounded-lg border border-border px-2 py-1 text-[11px] font-dm text-muted transition-colors hover:border-[#0ABFA3]/40 hover:text-[#0ABFA3]"
+                                >
+                                  {(replyMap[project.id]?.length ?? 0) > 0 && (
+                                    <span className="font-semibold">{replyMap[project.id].length}</span>
+                                  )}
+                                  <ChevronDown size={12} className={`transition-transform duration-200 ${expandedProjects.has(project.id) ? "rotate-180" : ""}`} />
+                                </button>
+                              </div>
+
+                              {/* Expanded: replies + reply input */}
+                              {expandedProjects.has(project.id) && (
+                                <>
+                                  {(replyMap[project.id] ?? []).length > 0 && (
+                                    <div className="mt-3 space-y-3">
+                                      {(replyMap[project.id] ?? []).map((reply) => (
+                                        <div key={reply.id} className="flex gap-2.5">
+                                          <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${reply.sender_role === "client" ? "bg-[#0ABFA3]/20 text-[#0ABFA3]" : "bg-amber-500/20 text-amber-400"}`}>
+                                            {reply.sender_role === "client" ? "Y" : "W"}
+                                          </div>
+                                          <div className="min-w-0 flex-1">
+                                            <div className="mb-1 flex items-center justify-between gap-2">
+                                              <span className={`text-[10px] font-dm font-semibold ${reply.sender_role === "client" ? "text-[#0ABFA3]" : "text-amber-400"}`}>
+                                                {reply.sender_role === "client" ? "You" : "Worker"}
+                                              </span>
+                                              <span className="text-[10px] font-dm text-muted">{formatTime(reply.created_at)}</span>
+                                            </div>
+                                            <div className="rounded-xl rounded-tl-none border border-border bg-black/40 px-3 py-2.5">
+                                              <p className="text-[12px] font-dm leading-relaxed text-body">{reply.message}</p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <div className="mt-3 flex items-center gap-2">
+                                    <input
+                                      type="text"
+                                      value={replyInputMap[project.id] ?? ""}
+                                      onChange={(e) => setReplyInputMap((prev) => ({ ...prev, [project.id]: e.target.value }))}
+                                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSendReply(project.id, "client"); } }}
+                                      placeholder="Add a comment…"
+                                      className="flex-1 rounded-xl border border-border bg-black/40 px-3.5 py-2.5 text-[12px] font-dm text-body placeholder:text-muted/50 transition-colors focus:border-[#0ABFA3] focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/20"
+                                    />
+                                    <button
+                                      onClick={() => handleSendReply(project.id, "client")}
+                                      disabled={sendingReply === project.id || !(replyInputMap[project.id]?.trim())}
+                                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-opacity hover:opacity-90 disabled:opacity-35"
+                                      style={{ background: "#0ABFA3" }}
+                                    >
+                                      {sendingReply === project.id ? <Loader2 size={14} className="animate-spin text-white" /> : <Send size={14} className="text-white" />}
+                                    </button>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>

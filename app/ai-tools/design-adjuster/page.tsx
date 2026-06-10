@@ -6,7 +6,6 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
-  ArrowUpRight,
   Brush,
   Download,
   Eraser,
@@ -18,8 +17,7 @@ import {
   Wand2,
   X,
 } from "lucide-react";
-import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
+import DashboardShell from "@/components/DashboardShell";
 import { useAuth } from "@/lib/auth";
 
 const PAGE_PATH = "/ai-tools/design-adjuster";
@@ -63,27 +61,18 @@ export default function DesignAdjusterPage() {
   const [dragOver, setDragOver] = useState(false);
   const [step, setStep] = useState(0);
 
-  // Login gate.
   useEffect(() => {
     if (ready && !user) {
       router.replace(`/login?redirect=${encodeURIComponent(PAGE_PATH)}`);
     }
   }, [ready, user, router]);
 
-  // Cycle the loading status copy while generating.
   useEffect(() => {
-    if (!loading) {
-      setStep(0);
-      return;
-    }
-    const id = window.setInterval(
-      () => setStep((s) => (s + 1) % STATUS.length),
-      2200,
-    );
+    if (!loading) { setStep(0); return; }
+    const id = window.setInterval(() => setStep((s) => (s + 1) % STATUS.length), 2200);
     return () => window.clearInterval(id);
   }, [loading]);
 
-  // Draw the uploaded photo onto the base canvas and size the mask canvas to match.
   useEffect(() => {
     if (!imageSrc) return;
     const img = new window.Image();
@@ -112,11 +101,7 @@ export default function DesignAdjusterPage() {
     const mask = maskCanvasRef.current!;
     const rect = mask.getBoundingClientRect();
     const scale = mask.width / rect.width;
-    return {
-      x: (e.clientX - rect.left) * scale,
-      y: (e.clientY - rect.top) * scale,
-      scale,
-    };
+    return { x: (e.clientX - rect.left) * scale, y: (e.clientY - rect.top) * scale, scale };
   };
 
   const applyStrokeStyle = (ctx: CanvasRenderingContext2D) => {
@@ -167,21 +152,14 @@ export default function DesignAdjusterPage() {
     lastPoint.current = p;
   };
 
-  const onPointerUp = () => {
-    drawing.current = false;
-    lastPoint.current = null;
-  };
+  const onPointerUp = () => { drawing.current = false; lastPoint.current = null; };
 
   const clearMask = () => {
     const mask = maskCanvasRef.current;
     mask?.getContext("2d")?.clearRect(0, 0, mask.width, mask.height);
   };
 
-  const removeImage = () => {
-    setImageSrc(null);
-    setResultImg(null);
-    setMessage("");
-  };
+  const removeImage = () => { setImageSrc(null); setResultImg(null); setMessage(""); };
 
   const downloadResult = () => {
     if (!resultImg) return;
@@ -192,14 +170,8 @@ export default function DesignAdjusterPage() {
   };
 
   const processImage = async () => {
-    if (!imageSrc) {
-      setMessage("Upload a property photo first.");
-      return;
-    }
-    if (!prompt.trim()) {
-      setMessage("Describe the change you want in the masked area.");
-      return;
-    }
+    if (!imageSrc) { setMessage("Upload a property photo first."); return; }
+    if (!prompt.trim()) { setMessage("Describe the change you want in the masked area."); return; }
     setLoading(true);
     setMessage("");
     setResultImg(null);
@@ -226,369 +198,313 @@ export default function DesignAdjusterPage() {
 
   if (!ready || !user) {
     return (
-      <>
-        <Nav />
-        <main className="flex min-h-screen items-center justify-center pt-16">
+      <DashboardShell>
+        <main className="flex h-screen items-center justify-center">
           <Loader2 className="animate-spin text-muted" size={28} />
         </main>
-      </>
+      </DashboardShell>
     );
   }
 
   return (
-    <>
-      <Nav />
-      <main className="relative min-h-screen overflow-hidden bg-[#050608] pt-16">
+    <DashboardShell>
+      <main className="relative flex h-screen flex-col overflow-hidden bg-[#050608]">
         {/* Futuristic backdrop */}
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.04]"
+          className="pointer-events-none absolute inset-0 opacity-[0.03]"
           style={{
-            backgroundImage:
-              "linear-gradient(#0ABFA3 1px, transparent 1px), linear-gradient(90deg, #0ABFA3 1px, transparent 1px)",
+            backgroundImage: "linear-gradient(#0ABFA3 1px, transparent 1px), linear-gradient(90deg, #0ABFA3 1px, transparent 1px)",
             backgroundSize: "44px 44px",
           }}
         />
-        <div className="pointer-events-none absolute -top-40 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-[#0ABFA3]/10 blur-[160px]" />
+        <div className="pointer-events-none absolute -top-40 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-[#0ABFA3]/8 blur-[140px]" />
 
-        <div className="relative mx-auto max-w-6xl px-6 py-12">
+        {/* ── Inner flex column ── */}
+        <div className="relative z-10 mx-auto flex h-full w-full max-w-[1400px] flex-col gap-3 px-5 py-4">
+
           {/* Header */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.4 }}
+            className="flex shrink-0 flex-wrap items-center justify-between gap-3"
           >
-            <Link
-              href="/ai-tools"
-              className="mb-6 inline-flex items-center gap-1.5 text-[13px] font-dm text-muted transition-colors hover:text-primary"
-            >
-              <ArrowLeft size={15} />
-              All AI tools
-            </Link>
-
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-1.5 text-[12px] font-dm text-muted transition-colors hover:text-primary"
+              >
+                <ArrowLeft size={14} />
+                All AI tools
+              </Link>
+              <div className="h-4 w-px bg-white/10" />
+              <div className="flex items-center gap-3">
                 <div className="relative">
                   <motion.div
-                    className="absolute inset-0 rounded-2xl bg-[#0ABFA3]/30 blur-xl"
-                    animate={{ scale: [1, 1.25, 1], opacity: [0.5, 0.25, 0.5] }}
+                    className="absolute inset-0 rounded-xl bg-[#0ABFA3]/30 blur-lg"
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0.2, 0.5] }}
                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                   />
                   <div
-                    className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-[#155E53]/60"
+                    className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#155E53]/60"
                     style={{ background: "#072a26" }}
                   >
-                    <Wand2 size={26} style={{ color: "#0ABFA3" }} strokeWidth={1.75} />
+                    <Wand2 size={20} style={{ color: "#0ABFA3" }} strokeWidth={1.75} />
                   </div>
                 </div>
                 <div>
-                  <h1
-                    className="font-syne text-body"
-                    style={{ fontSize: "clamp(26px, 3.5vw, 40px)", fontWeight: 800, letterSpacing: "-0.02em" }}
-                  >
+                  <h1 className="font-syne text-[20px] font-bold text-white" style={{ letterSpacing: "-0.02em" }}>
                     Design Adjuster
                   </h1>
-                  <p className="mt-1 text-[14px] font-dm text-muted">
+                  <p className="text-[12px] font-dm text-muted">
                     Brush an area of a property photo — AI restyles only that region.
                   </p>
                 </div>
               </div>
+            </div>
 
-              {/* Status chip */}
-              <div
-                className="inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[12px] font-dm font-semibold"
-                style={{ borderColor: "#155E53", background: "rgba(6,43,38,0.6)" }}
-              >
-                <span className="relative flex h-2 w-2">
-                  <motion.span
-                    className="absolute inline-flex h-full w-full rounded-full bg-[#0ABFA3]"
-                    animate={{ scale: [1, 2.2, 1], opacity: [0.8, 0, 0.8] }}
-                    transition={{ duration: 1.6, repeat: Infinity }}
-                  />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[#0ABFA3]" />
-                </span>
-                <span className="text-[#7fffee]">
-                  {loading ? "Generating" : "AI ready"}
-                </span>
-              </div>
+            <div
+              className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-dm font-semibold"
+              style={{ borderColor: "#155E53", background: "rgba(6,43,38,0.6)" }}
+            >
+              <span className="relative flex h-2 w-2">
+                <motion.span
+                  className="absolute inline-flex h-full w-full rounded-full bg-[#0ABFA3]"
+                  animate={{ scale: [1, 2.2, 1], opacity: [0.8, 0, 0.8] }}
+                  transition={{ duration: 1.6, repeat: Infinity }}
+                />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#0ABFA3]" />
+              </span>
+              <span className="text-[#7fffee]">{loading ? "Generating" : "AI ready"}</span>
             </div>
           </motion.div>
 
-          {/* Workspace */}
-          <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* ── Source ── */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.08 }}
-            >
-              <PanelLabel index="01" label="Source" />
-              <Panel>
-                {!imageSrc ? (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setDragOver(true);
-                    }}
-                    onDragLeave={() => setDragOver(false)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setDragOver(false);
-                      loadFile(e.dataTransfer.files?.[0]);
-                    }}
-                    className={`group flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed text-center transition-all duration-200 ${
-                      dragOver
-                        ? "border-[#0ABFA3] bg-[#0ABFA3]/5"
-                        : "border-border bg-black/40 hover:border-[#0ABFA3]/60"
-                    }`}
-                  >
-                    <motion.div
-                      animate={dragOver ? { scale: 1.1 } : { scale: 1 }}
-                      className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#155E53]/50"
-                      style={{ background: "#072a26" }}
-                    >
-                      <Upload size={26} style={{ color: "#0ABFA3" }} />
-                    </motion.div>
-                    <p className="font-syne text-[16px] font-bold text-body">
-                      {dragOver ? "Drop your photo" : "Upload a property photo"}
-                    </p>
-                    <p className="mt-1 text-[12px] font-dm text-muted">
-                      Click to browse or drag &amp; drop — JPG or PNG
-                    </p>
-                  </div>
-                ) : (
-                  <div className="relative w-full overflow-hidden rounded-xl border border-border bg-black">
-                    <canvas ref={imgCanvasRef} className="block h-auto w-full select-none" />
-                    <canvas
-                      ref={maskCanvasRef}
-                      onPointerDown={onPointerDown}
-                      onPointerMove={onPointerMove}
-                      onPointerUp={onPointerUp}
-                      onPointerLeave={onPointerUp}
-                      className="absolute inset-0 h-full w-full cursor-crosshair touch-none"
-                    />
-                    <button
-                      onClick={removeImage}
-                      aria-label="Remove image"
-                      className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-lg bg-black/60 text-white/80 backdrop-blur transition-colors hover:bg-black/80 hover:text-white"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                )}
+          {/* ── Workspace (fills remaining height) ── */}
+          <div className="flex min-h-0 flex-1 gap-3">
 
-                {/* Mask toolbar */}
-                {imageSrc && (
-                  <div className="mt-4 flex flex-wrap items-center gap-2.5 rounded-xl border border-border bg-black/40 p-2.5">
-                    <div className="inline-flex rounded-lg border border-border p-0.5">
-                      <ToolBtn active={tool === "brush"} onClick={() => setTool("brush")} icon={Brush} label="Brush" />
-                      <ToolBtn active={tool === "eraser"} onClick={() => setTool("eraser")} icon={Eraser} label="Erase" />
-                    </div>
-                    <label className="flex items-center gap-2 px-1 text-[12px] font-dm text-muted">
-                      <span className="hidden sm:inline">Size</span>
-                      <input
-                        type="range"
-                        min={10}
-                        max={120}
-                        value={brush}
-                        onChange={(e) => setBrush(Number(e.target.value))}
-                        className="w-24 accent-[#0ABFA3]"
-                      />
-                      <span className="w-9 text-body">{brush}px</span>
-                    </label>
-                    <button
-                      onClick={clearMask}
-                      className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[12px] font-dm font-semibold text-muted transition-colors hover:border-red-500/40 hover:text-red-300"
-                    >
-                      <X size={13} />
-                      Clear
-                    </button>
-                  </div>
-                )}
-              </Panel>
-            </motion.div>
+            {/* Source + Result columns */}
+            <div className="flex min-h-0 flex-1 flex-col gap-3">
 
-            {/* ── Result ── */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.16 }}
-            >
-              <PanelLabel index="02" label="Result" />
-              <Panel>
-                <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-xl border border-border bg-black">
-                  {/* Result image */}
-                  <AnimatePresence mode="wait">
-                    {resultImg && !loading ? (
-                      <motion.img
-                        key="result"
-                        // eslint-disable-next-line @next/next/no-img-element
-                        src={resultImg}
-                        alt="Processed result"
-                        className="h-full w-full object-contain"
-                        initial={{ opacity: 0, scale: 1.05, filter: "blur(8px)" }}
-                        animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                      />
-                    ) : !loading ? (
-                      <motion.div
-                        key="placeholder"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="flex flex-col items-center gap-3 px-6 text-center"
+              {/* Image panels row */}
+              <div className="grid min-h-0 flex-1 grid-cols-2 gap-3">
+
+                {/* Source */}
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.05 }}
+                  className="flex min-h-0 flex-col"
+                >
+                  <PanelLabel index="01" label="Source" />
+                  <div className="relative flex min-h-0 flex-1 flex-col rounded-2xl border border-[#155E53]/40 bg-[#0b0d10]/80 p-3 shadow-[0_0_30px_rgba(10,191,163,0.04)]">
+                    <Corners />
+                    {!imageSrc ? (
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                        onDragLeave={() => setDragOver(false)}
+                        onDrop={(e) => { e.preventDefault(); setDragOver(false); loadFile(e.dataTransfer.files?.[0]); }}
+                        className={`flex min-h-0 flex-1 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed text-center transition-all duration-200 ${
+                          dragOver ? "border-[#0ABFA3] bg-[#0ABFA3]/5" : "border-border bg-black/40 hover:border-[#0ABFA3]/60"
+                        }`}
                       >
-                        <ImageIcon size={30} className="text-muted/40" />
-                        <p className="text-[13px] font-dm text-muted">
-                          Your restyled image will appear here
+                        <motion.div
+                          animate={dragOver ? { scale: 1.1 } : { scale: 1 }}
+                          className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#155E53]/50"
+                          style={{ background: "#072a26" }}
+                        >
+                          <Upload size={22} style={{ color: "#0ABFA3" }} />
+                        </motion.div>
+                        <p className="font-syne text-[14px] font-bold text-body">
+                          {dragOver ? "Drop your photo" : "Upload a property photo"}
                         </p>
+                        <p className="mt-1 text-[11px] font-dm text-muted">
+                          Click to browse or drag &amp; drop — JPG or PNG
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-border bg-black">
+                        <canvas ref={imgCanvasRef} className="block h-auto w-full" />
+                        <canvas
+                          ref={maskCanvasRef}
+                          onPointerDown={onPointerDown}
+                          onPointerMove={onPointerMove}
+                          onPointerUp={onPointerUp}
+                          onPointerLeave={onPointerUp}
+                          className="absolute inset-0 h-full w-full cursor-crosshair touch-none"
+                        />
+                        <button
+                          onClick={removeImage}
+                          aria-label="Remove image"
+                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-lg bg-black/60 text-white/80 backdrop-blur transition-colors hover:bg-black/80 hover:text-white"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
+
+                    {imageSrc && (
+                      <div className="mt-2 flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-border bg-black/40 px-2.5 py-2">
+                        <div className="inline-flex rounded-lg border border-border p-0.5">
+                          <ToolBtn active={tool === "brush"} onClick={() => setTool("brush")} icon={Brush} label="Brush" />
+                          <ToolBtn active={tool === "eraser"} onClick={() => setTool("eraser")} icon={Eraser} label="Erase" />
+                        </div>
+                        <label className="flex items-center gap-2 px-1 text-[11px] font-dm text-muted">
+                          <span className="hidden sm:inline">Size</span>
+                          <input type="range" min={10} max={120} value={brush} onChange={(e) => setBrush(Number(e.target.value))} className="w-20 accent-[#0ABFA3]" />
+                          <span className="w-8 text-body">{brush}px</span>
+                        </label>
+                        <button
+                          onClick={clearMask}
+                          className="ml-auto inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-[11px] font-dm font-semibold text-muted transition-colors hover:border-red-500/40 hover:text-red-300"
+                        >
+                          <X size={12} /> Clear
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+
+                {/* Result */}
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.1 }}
+                  className="flex min-h-0 flex-col"
+                >
+                  <PanelLabel index="02" label="Result" />
+                  <div className="relative flex min-h-0 flex-1 flex-col rounded-2xl border border-[#155E53]/40 bg-[#0b0d10]/80 p-3 shadow-[0_0_30px_rgba(10,191,163,0.04)]">
+                    <Corners />
+                    <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-border bg-black">
+                      <AnimatePresence mode="wait">
+                        {resultImg && !loading ? (
+                          <motion.img
+                            key="result"
+                            // eslint-disable-next-line @next/next/no-img-element
+                            src={resultImg}
+                            alt="Processed result"
+                            className="absolute inset-0 h-full w-full object-contain"
+                            initial={{ opacity: 0, scale: 1.05, filter: "blur(8px)" }}
+                            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                          />
+                        ) : !loading ? (
+                          <motion.div
+                            key="placeholder"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center"
+                          >
+                            <ImageIcon size={26} className="text-muted/40" />
+                            <p className="text-[12px] font-dm text-muted">Your restyled image will appear here</p>
+                          </motion.div>
+                        ) : null}
+                      </AnimatePresence>
+                      <AnimatePresence>{loading && <GeneratingOverlay step={step} />}</AnimatePresence>
+                    </div>
+
+                    {resultImg && !loading && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-2 flex shrink-0 gap-2"
+                      >
+                        <button
+                          onClick={downloadResult}
+                          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-border bg-black/40 py-2 text-[12px] font-dm font-semibold text-body transition-colors hover:bg-white/5"
+                        >
+                          <Download size={13} /> Download
+                        </button>
+                        <button
+                          onClick={processImage}
+                          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#0ABFA3]/40 py-2 text-[12px] font-dm font-semibold text-[#0ABFA3] transition-colors hover:bg-[#0ABFA3]/10"
+                        >
+                          <RefreshCw size={13} /> Regenerate
+                        </button>
                       </motion.div>
-                    ) : null}
-                  </AnimatePresence>
-
-                  {/* Generating overlay */}
-                  <AnimatePresence>{loading && <GeneratingOverlay step={step} />}</AnimatePresence>
-                </div>
-
-                {/* Result actions */}
-                {resultImg && !loading && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 flex gap-2.5"
-                  >
-                    <button
-                      onClick={downloadResult}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-black/40 py-2.5 text-[13px] font-dm font-semibold text-body transition-colors hover:bg-white/5"
-                    >
-                      <Download size={15} />
-                      Download
-                    </button>
-                    <button
-                      onClick={processImage}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-[#0ABFA3]/40 py-2.5 text-[13px] font-dm font-semibold text-[#0ABFA3] transition-colors hover:bg-[#0ABFA3]/10"
-                    >
-                      <RefreshCw size={15} />
-                      Regenerate
-                    </button>
-                  </motion.div>
-                )}
-              </Panel>
-            </motion.div>
-          </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => loadFile(e.target.files?.[0])}
-          />
-
-          {/* ── Prompt / command bar ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.24 }}
-            className="mt-6"
-          >
-            <PanelLabel index="03" label="Design instructions" />
-            <Panel>
-              {/* Suggestion chips */}
-              <div className="mb-3 flex flex-wrap gap-2">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setPrompt(s)}
-                    className="rounded-full border border-border bg-black/40 px-3 py-1.5 text-[12px] font-dm text-muted transition-colors hover:border-[#0ABFA3]/50 hover:text-[#7fffee]"
-                  >
-                    {s}
-                  </button>
-                ))}
+                    )}
+                  </div>
+                </motion.div>
               </div>
 
-              <textarea
-                rows={3}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe how to adjust the masked area — e.g. repaint this wall sage green, replace the flooring with light oak, restage as a modern living room…"
-                className="w-full resize-none rounded-xl border border-border bg-black/40 p-4 text-[14px] font-dm leading-relaxed text-body placeholder:text-muted/60 transition-colors focus:border-[#0ABFA3] focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/30"
-              />
-
-              {/* Generate button */}
-              <button
-                onClick={processImage}
-                disabled={loading}
-                className="group relative mt-4 flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl py-4 text-[15px] font-dm font-bold text-white transition-all disabled:cursor-not-allowed disabled:opacity-60"
-                style={{ background: "linear-gradient(90deg, #0ABFA3, #0a8f80)" }}
+              {/* Instructions panel */}
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.15 }}
+                className="shrink-0"
               >
-                {/* hover shimmer */}
-                <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-                {loading ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    Generating…
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={18} />
-                    Generate Design
-                  </>
-                )}
-              </button>
+                <PanelLabel index="03" label="Design instructions" />
+                <div className="relative rounded-2xl border border-[#155E53]/40 bg-[#0b0d10]/80 p-3 shadow-[0_0_30px_rgba(10,191,163,0.04)]">
+                  <Corners />
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    {SUGGESTIONS.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setPrompt(s)}
+                        className="rounded-full border border-border bg-black/40 px-3 py-1 text-[11px] font-dm text-muted transition-colors hover:border-[#0ABFA3]/50 hover:text-[#7fffee]"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
 
-              {message && (
-                <motion.p
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-[13px] font-dm leading-relaxed text-amber-200/90"
-                >
-                  {message}
-                </motion.p>
-              )}
-            </Panel>
-          </motion.div>
+                  <div className="flex gap-2">
+                    <textarea
+                      rows={2}
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      placeholder="Describe how to adjust the masked area — e.g. repaint this wall sage green, replace the flooring with light oak…"
+                      className="min-h-0 flex-1 resize-none rounded-xl border border-border bg-black/40 px-3 py-2.5 text-[13px] font-dm leading-relaxed text-body placeholder:text-muted/50 transition-colors focus:border-[#0ABFA3] focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/30"
+                    />
+                    <button
+                      onClick={processImage}
+                      disabled={loading}
+                      className="group relative flex w-48 shrink-0 items-center justify-center gap-2 overflow-hidden rounded-xl text-[13px] font-dm font-bold text-white transition-all disabled:cursor-not-allowed disabled:opacity-60"
+                      style={{ background: "linear-gradient(90deg, #0ABFA3, #0a8f80)" }}
+                    >
+                      <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                      {loading ? (
+                        <><Loader2 size={16} className="animate-spin" /> Generating…</>
+                      ) : (
+                        <><Sparkles size={16} /> Generate Design</>
+                      )}
+                    </button>
+                  </div>
 
-          {/* Bottom CTA */}
-          <Link
-            href="/contact"
-            className="mt-6 flex items-center justify-center gap-2 rounded-2xl border px-6 py-4 text-[14px] font-dm font-semibold text-body transition-colors hover:bg-white/5"
-            style={{ background: "#062B26", borderColor: "#155E53" }}
-          >
-            Want this built into your business? Get a custom AI build
-            <ArrowUpRight size={16} />
-          </Link>
+                  {message && (
+                    <motion.p
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[12px] font-dm leading-relaxed text-amber-200/90"
+                    >
+                      {message}
+                    </motion.p>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          </div>
         </div>
+
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => loadFile(e.target.files?.[0])} />
       </main>
-      <Footer />
-    </>
-  );
-}
-
-/* ── Building blocks ── */
-
-function Panel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="relative rounded-2xl border border-[#155E53]/40 bg-[#0b0d10]/80 p-4 shadow-[0_0_40px_rgba(10,191,163,0.04)] backdrop-blur-sm">
-      <Corners />
-      {children}
-    </div>
+    </DashboardShell>
   );
 }
 
 function PanelLabel({ index, label }: { index: string; label: string }) {
   return (
-    <div className="mb-2.5 flex items-center gap-2">
-      <span className="font-mono text-[11px] font-bold text-[#0ABFA3]">{index}</span>
-      <span className="text-[11px] font-dm font-semibold uppercase tracking-[0.18em] text-muted">
-        {label}
-      </span>
+    <div className="mb-1.5 flex items-center gap-2">
+      <span className="font-mono text-[10px] font-bold text-[#0ABFA3]">{index}</span>
+      <span className="text-[10px] font-dm font-semibold uppercase tracking-[0.18em] text-muted">{label}</span>
       <span className="h-px flex-1 bg-gradient-to-r from-[#155E53]/50 to-transparent" />
     </div>
   );
 }
 
 function Corners() {
-  const base = "pointer-events-none absolute h-3.5 w-3.5 border-[#0ABFA3]/40";
+  const base = "pointer-events-none absolute h-3 w-3 border-[#0ABFA3]/40";
   return (
     <>
       <span className={`${base} left-1.5 top-1.5 rounded-tl-md border-l border-t`} />
@@ -599,26 +515,14 @@ function Corners() {
   );
 }
 
-function ToolBtn({
-  active,
-  onClick,
-  icon: Icon,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: typeof Brush;
-  label: string;
-}) {
+function ToolBtn({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof Brush; label: string }) {
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12px] font-dm font-semibold transition-colors ${
-        active ? "text-white" : "text-muted hover:text-body"
-      }`}
+      className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-dm font-semibold transition-colors ${active ? "text-white" : "text-muted hover:text-body"}`}
       style={active ? { background: "#0ABFA3" } : undefined}
     >
-      <Icon size={14} />
+      <Icon size={13} />
       {label}
     </button>
   );
@@ -632,38 +536,25 @@ function GeneratingOverlay({ step }: { step: number }) {
       exit={{ opacity: 0 }}
       className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden bg-black/70 backdrop-blur-sm"
     >
-      {/* radial glow */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(10,191,163,0.18),transparent_60%)]" />
-
-      {/* sweeping scan beam */}
       <motion.div
-        className="pointer-events-none absolute inset-x-0 h-28 bg-gradient-to-b from-transparent via-[#0ABFA3]/25 to-transparent"
+        className="pointer-events-none absolute inset-x-0 h-20 bg-gradient-to-b from-transparent via-[#0ABFA3]/25 to-transparent"
         animate={{ y: ["-30%", "130%"] }}
         transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
         style={{ top: 0 }}
       />
-
-      {/* pulsing core */}
-      <div className="relative mb-6">
+      <div className="relative mb-4">
         <motion.div
           className="absolute inset-0 rounded-2xl bg-[#0ABFA3]/40 blur-2xl"
           animate={{ scale: [1, 1.5, 1], opacity: [0.6, 0.2, 0.6] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
         />
-        <div
-          className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-[#155E53]/60"
-          style={{ background: "#072a26" }}
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }}
-          >
-            <Sparkles size={26} style={{ color: "#0ABFA3" }} />
+        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-[#155E53]/60" style={{ background: "#072a26" }}>
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 3.5, repeat: Infinity, ease: "linear" }}>
+            <Sparkles size={24} style={{ color: "#0ABFA3" }} />
           </motion.div>
         </div>
       </div>
-
-      {/* cycling status */}
       <AnimatePresence mode="wait">
         <motion.p
           key={step}
@@ -671,24 +562,19 @@ function GeneratingOverlay({ step }: { step: number }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.25 }}
-          className="px-6 text-center font-dm text-[14px] font-semibold text-[#7fffee]"
+          className="px-6 text-center font-dm text-[13px] font-semibold text-[#7fffee]"
         >
           {STATUS[step]}
         </motion.p>
       </AnimatePresence>
-
-      {/* indeterminate progress */}
-      <div className="mt-4 h-1 w-44 overflow-hidden rounded-full bg-white/10">
+      <div className="mt-3 h-1 w-36 overflow-hidden rounded-full bg-white/10">
         <motion.div
           className="h-full w-1/3 rounded-full bg-gradient-to-r from-transparent via-[#0ABFA3] to-transparent"
           animate={{ x: ["-120%", "320%"] }}
           transition={{ duration: 1.3, repeat: Infinity, ease: "linear" }}
         />
       </div>
-
-      <p className="mt-3 font-dm text-[11px] text-muted">
-        This can take up to a minute
-      </p>
+      <p className="mt-2 font-dm text-[11px] text-muted">This can take up to a minute</p>
     </motion.div>
   );
 }

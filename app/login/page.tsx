@@ -40,11 +40,11 @@ const reasons = [
 
 // Returns a safe, same-site path from the ?redirect= query param.
 function getRedirectTarget(): string {
-  if (typeof window === "undefined") return "/ai-tools";
+  if (typeof window === "undefined") return "/dashboard";
   const param = new URLSearchParams(window.location.search).get("redirect");
   // Only allow internal paths (must start with "/", not "//") to avoid open redirects.
   if (param && param.startsWith("/") && !param.startsWith("//")) return param;
-  return "/ai-tools";
+  return "/dashboard";
 }
 
 export default function LoginPage() {

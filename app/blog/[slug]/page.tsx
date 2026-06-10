@@ -1,5 +1,4 @@
-import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
+import DashboardShell from "@/components/DashboardShell";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -214,10 +213,9 @@ export default async function BlogPostPage({
   };
 
   return (
-    <>
+    <DashboardShell>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <Nav />
-      <main className="pt-16">
+      <main>
         {/* Header */}
         <section className="border-b border-border bg-[#101113] py-14">
           <div className="mx-auto max-w-3xl px-6">
@@ -298,29 +296,9 @@ export default async function BlogPostPage({
               </div>
             )}
 
-            {/* CTA */}
-            <div
-              className="mt-12 rounded-card border p-8 text-center"
-              style={{ background: "#062B26", borderColor: "#155E53" }}
-            >
-              <h3 className="font-syne text-[20px] font-bold text-body" style={{ letterSpacing: "-0.01em" }}>
-                Want AKT to build this for your business?
-              </h3>
-              <p className="mx-auto mt-2 max-w-md text-[14px] font-dm text-muted">
-                Book a free consultation and we&apos;ll map out exactly how AKT can help.
-              </p>
-              <Link
-                href="/contact"
-                className="mt-6 inline-flex items-center gap-2 rounded-md px-6 py-3 text-[14px] font-dm font-semibold text-white transition-opacity hover:opacity-90"
-                style={{ background: "#0ABFA3" }}
-              >
-                Book a free consultation
-              </Link>
-            </div>
           </div>
         </article>
       </main>
-      <Footer />
-    </>
+    </DashboardShell>
   );
 }

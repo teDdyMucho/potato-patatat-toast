@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import Nav from "@/components/Nav";
-import Footer from "@/components/Footer";
+import DashboardShell from "@/components/DashboardShell";
 import { useAuth } from "@/lib/auth";
 import { createBrowserClient } from "@supabase/ssr";
 import {
@@ -120,9 +119,8 @@ export default function AccountPage() {
   }
 
   return (
-    <>
-      <Nav />
-      <main className="min-h-screen bg-background pt-20 pb-16">
+    <DashboardShell>
+      <main className="min-h-screen bg-background pb-16 pt-8">
         <div className="mx-auto max-w-2xl px-6">
 
           {/* Header */}
@@ -294,8 +292,7 @@ export default function AccountPage() {
 
         </div>
       </main>
-      <Footer />
-    </>
+    </DashboardShell>
   );
 }
 
