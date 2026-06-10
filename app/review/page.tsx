@@ -100,7 +100,7 @@ export default function ReviewPage() {
 
   return (
     <DashboardShell noScroll>
-      <main className="flex flex-1 flex-col overflow-hidden px-4 pt-8 pb-4 sm:px-6 lg:px-10">
+      <main className="flex flex-1 flex-col overflow-hidden px-3 pt-5 pb-3 sm:px-6 sm:pt-8 sm:pb-4 lg:px-10">
         {isStaff || isAdmin ? <WorkerView /> : <ClientView />}
       </main>
     </DashboardShell>
@@ -293,10 +293,10 @@ function WorkerView() {
           <Briefcase size={22} style={{ color: "#0ABFA3" }} />
         </div>
         <div>
-          <h1 className="font-syne text-[24px] font-extrabold text-white" style={{ letterSpacing: "-0.02em" }}>
+          <h1 className="font-syne text-[18px] sm:text-[24px] font-extrabold text-white" style={{ letterSpacing: "-0.02em" }}>
             Project Review
           </h1>
-          <p className="mt-0.5 text-[13px] font-dm text-muted">
+          <p className="mt-0.5 text-[12px] sm:text-[13px] font-dm text-muted">
             Submit projects to clients and track their status.
           </p>
         </div>
@@ -310,10 +310,52 @@ function WorkerView() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex flex-1 min-h-0 gap-5"
+          className="flex flex-1 min-h-0 flex-col gap-3 md:flex-row md:gap-5"
         >
-          {/* Sidebar */}
-          <aside className="relative flex w-64 shrink-0 flex-col overflow-hidden rounded-2xl border border-[#155E53]/40 bg-[#0b0d10]/80 shadow-[0_0_40px_rgba(10,191,163,0.04)]">
+          {/* Mobile: horizontal connection chip bar */}
+          <div className="md:hidden">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users size={13} style={{ color: "#0ABFA3" }} />
+                <span className="text-[11px] font-dm font-semibold uppercase tracking-wider text-muted">Clients</span>
+                {connections.length > 0 && (
+                  <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white" style={{ background: "#0ABFA3" }}>{connections.length}</span>
+                )}
+              </div>
+              <button
+                onClick={() => { setAddClientError(""); setNewClientEmail(""); setAddClientOpen(true); }}
+                className="flex items-center gap-1 rounded-lg border border-[#155E53]/50 px-2.5 py-1 text-[11px] font-dm font-semibold text-[#0ABFA3] hover:bg-[#0ABFA3]/10"
+              >
+                <UserPlus size={11} /> Add
+              </button>
+            </div>
+            {connections.length === 0 ? (
+              <div className="flex items-center gap-2 rounded-xl border border-dashed border-[#155E53]/40 px-3 py-2">
+                <p className="text-[12px] font-dm text-muted">No clients yet.</p>
+                <button onClick={() => { setAddClientError(""); setNewClientEmail(""); setAddClientOpen(true); }} className="text-[12px] font-dm font-semibold text-[#0ABFA3]">+ Add one</button>
+              </div>
+            ) : (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {connections.map((conn) => {
+                  const pending = conn.projects.filter((p) => p.status === "pending").length;
+                  const isActive = selected === conn.id;
+                  return (
+                    <button
+                      key={conn.id}
+                      onClick={() => setSelected(conn.id)}
+                      className={`flex-none whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-dm font-semibold transition-colors ${isActive ? "border-[#0ABFA3]/50 bg-[#0ABFA3]/10 text-[#0ABFA3]" : "border-[#155E53]/40 bg-black/30 text-muted"}`}
+                    >
+                      {(conn.worker_label || conn.client_email).split("@")[0]}
+                      {pending > 0 && <span className="ml-1" style={{ color: "#F59E0B" }}>·{pending}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop sidebar */}
+          <aside className="relative hidden md:flex md:w-52 lg:w-64 shrink-0 flex-col overflow-hidden rounded-2xl border border-[#155E53]/40 bg-[#0b0d10]/80 shadow-[0_0_40px_rgba(10,191,163,0.04)]">
             <Corners />
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <div className="flex items-center gap-2">
@@ -436,10 +478,10 @@ function WorkerView() {
               </div>
             ) : (
               <>
-                <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <div className="mb-4 flex flex-wrap items-start justify-between gap-2 sm:gap-3">
                   <div>
                     <p className="text-[11px] font-dm font-semibold uppercase tracking-wider text-muted">Client</p>
-                    <p className="mt-0.5 font-syne text-[18px] font-bold text-body" style={{ letterSpacing: "-0.01em" }}>
+                    <p className="mt-0.5 font-syne text-[16px] sm:text-[18px] font-bold text-body" style={{ letterSpacing: "-0.01em" }}>
                       {activeConn.worker_label || activeConn.client_email}
                     </p>
                     {activeConn.worker_label && <p className="mt-0.5 text-[12px] font-dm text-muted">{activeConn.client_email}</p>}
@@ -841,8 +883,8 @@ function ClientView() {
             <Briefcase size={22} style={{ color: "#0ABFA3" }} />
           </div>
           <div>
-            <h1 className="font-syne text-[24px] font-extrabold text-white" style={{ letterSpacing: "-0.02em" }}>Project Review</h1>
-            <p className="mt-0.5 text-[13px] font-dm text-muted">Review and approve projects submitted by your workers.</p>
+            <h1 className="font-syne text-[18px] sm:text-[24px] font-extrabold text-white" style={{ letterSpacing: "-0.02em" }}>Project Review</h1>
+            <p className="mt-0.5 text-[12px] sm:text-[13px] font-dm text-muted">Review and approve projects submitted by your workers.</p>
           </div>
         </div>
         {totalPending > 0 && (
@@ -865,9 +907,34 @@ function ClientView() {
           <p className="mt-1 max-w-xs text-[13px] font-dm text-muted">You&apos;ll see projects here once a staff member tags you as a client and submits work for your review.</p>
         </motion.div>
       ) : (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-1 min-h-0 gap-5">
-          {/* Sidebar */}
-          <aside className="relative flex w-64 shrink-0 flex-col rounded-2xl border border-[#155E53]/40 bg-[#0b0d10]/80 shadow-[0_0_40px_rgba(10,191,163,0.04)]">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-1 min-h-0 flex-col gap-3 md:flex-row md:gap-5">
+          {/* Mobile: horizontal connection chip bar */}
+          <div className="md:hidden">
+            <div className="mb-2 flex items-center gap-2">
+              <Briefcase size={13} style={{ color: "#0ABFA3" }} />
+              <span className="text-[11px] font-dm font-semibold uppercase tracking-wider text-muted">Workers</span>
+              <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-bold text-white" style={{ background: "#0ABFA3" }}>{connections.length}</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {connections.map((conn) => {
+                const pending = conn.projects.filter((p) => p.status === "pending").length;
+                const isActive = selected === conn.id;
+                return (
+                  <button
+                    key={conn.id}
+                    onClick={() => setSelected(conn.id)}
+                    className={`flex-none whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-dm font-semibold transition-colors ${isActive ? "border-[#0ABFA3]/50 bg-[#0ABFA3]/10 text-[#0ABFA3]" : "border-[#155E53]/40 bg-black/30 text-muted"}`}
+                  >
+                    {(conn.client_label || conn.worker_email).split("@")[0]}
+                    {pending > 0 && <span className="ml-1" style={{ color: "#F59E0B" }}>·{pending}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Desktop sidebar */}
+          <aside className="relative hidden md:flex md:w-52 lg:w-64 shrink-0 flex-col rounded-2xl border border-[#155E53]/40 bg-[#0b0d10]/80 shadow-[0_0_40px_rgba(10,191,163,0.04)]">
             <Corners />
             <div className="flex items-center gap-2 border-b border-border px-4 py-3">
               <Briefcase size={14} style={{ color: "#0ABFA3" }} />
@@ -940,9 +1007,9 @@ function ClientView() {
               </div>
             ) : (
               <>
-                <div className="mb-5">
+                <div className="mb-4">
                   <p className="text-[11px] font-dm font-semibold uppercase tracking-wider text-muted">Worker</p>
-                  <p className="mt-0.5 font-syne text-[18px] font-bold text-body" style={{ letterSpacing: "-0.01em" }}>
+                  <p className="mt-0.5 font-syne text-[16px] sm:text-[18px] font-bold text-body" style={{ letterSpacing: "-0.01em" }}>
                     {activeConn.client_label || activeConn.worker_email}
                   </p>
                   {activeConn.client_label && <p className="mt-0.5 text-[12px] font-dm text-muted">{activeConn.worker_email}</p>}
@@ -993,7 +1060,7 @@ function ClientView() {
                                 placeholder="Leave feedback (optional)…"
                                 className="w-full resize-none rounded-xl border border-border bg-black/40 p-3 text-[13px] font-dm leading-relaxed text-body placeholder:text-muted/60 transition-colors focus:border-[#0ABFA3] focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/30"
                               />
-                              <div className="flex gap-2.5">
+                              <div className="flex flex-col gap-2 xs:flex-row sm:flex-row">
                                 <button onClick={() => handleReview(project.id, "approved")} disabled={isReviewing} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#0ABFA3]/40 py-2.5 text-[13px] font-dm font-semibold text-[#0ABFA3] transition-colors hover:bg-[#0ABFA3]/10 disabled:opacity-50">
                                   {isReviewing ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={15} />} Approve
                                 </button>

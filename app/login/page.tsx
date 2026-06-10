@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowRight,
   Bot,
@@ -58,6 +59,8 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [subscribeNewsletter, setSubscribeNewsletter] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -128,6 +131,8 @@ export default function LoginPage() {
     setError("");
     setNotice("");
     setConfirmPassword("");
+    setAgreedToTerms(false);
+    setSubscribeNewsletter(true);
   };
 
   return (
@@ -283,6 +288,73 @@ export default function LoginPage() {
                   />
                 )}
 
+                {/* Terms checkbox — signup only */}
+                {mode === "signup" && (
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 transition-colors hover:bg-white/[0.05]">
+                    <span className="relative mt-0.5 flex shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={agreedToTerms}
+                        onChange={(e) => setAgreedToTerms(e.target.checked)}
+                        className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-white/20 bg-black/40 transition-colors checked:border-[#0ABFA3] checked:bg-[#0ABFA3] focus:outline-none focus:ring-2 focus:ring-[#0ABFA3]/30"
+                      />
+                      {/* Custom checkmark */}
+                      <svg
+                        className="pointer-events-none absolute inset-0 h-4 w-4 scale-0 text-white transition-transform peer-checked:scale-100"
+                        viewBox="0 0 16 16" fill="none" aria-hidden="true"
+                      >
+                        <path d="M3 8l3.5 3.5L13 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                    <span className="text-[13px] font-dm leading-relaxed text-muted">
+                      I have read and agree to the{" "}
+                      <Link
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-[#0ABFA3] underline-offset-2 hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Terms and Conditions
+                      </Link>
+                      {" "}and{" "}
+                      <Link
+                        href="/terms#privacy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-[#0ABFA3] underline-offset-2 hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Privacy Policy
+                      </Link>
+                      .
+                    </span>
+                  </label>
+                )}
+
+                {/* Newsletter checkbox — signup only, checked by default */}
+                {mode === "signup" && (
+                  <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 transition-colors hover:bg-white/[0.05]">
+                    <span className="relative mt-0.5 flex shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={subscribeNewsletter}
+                        onChange={(e) => setSubscribeNewsletter(e.target.checked)}
+                        className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-white/20 bg-black/40 transition-colors checked:border-[#0ABFA3] checked:bg-[#0ABFA3] focus:outline-none focus:ring-2 focus:ring-[#0ABFA3]/30"
+                      />
+                      <svg
+                        className="pointer-events-none absolute inset-0 h-4 w-4 scale-0 text-white transition-transform peer-checked:scale-100"
+                        viewBox="0 0 16 16" fill="none" aria-hidden="true"
+                      >
+                        <path d="M3 8l3.5 3.5L13 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                    <span className="text-[13px] font-dm leading-relaxed text-muted">
+                      Subscribe to our newsletter for AI tips, automation updates, and AKT news.
+                    </span>
+                  </label>
+                )}
+
                 {error && (
                   <p className="text-[14px] font-dm text-red-400" role="alert">
                     {error}
@@ -291,8 +363,8 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-lg text-[16px] font-dm font-semibold text-white transition-colors disabled:opacity-50"
+                  disabled={submitting || (mode === "signup" && !agreedToTerms)}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-lg text-[16px] font-dm font-semibold text-white transition-all disabled:cursor-not-allowed disabled:opacity-40"
                   style={{ background: "#0ABFA3" }}
                 >
                   {submitting
