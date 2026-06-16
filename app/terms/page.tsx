@@ -173,7 +173,7 @@ export default function TermsPage() {
                 <Bullet>Upload or transmit viruses, malware, or any code of a destructive nature.</Bullet>
                 <Bullet>Harvest, scrape, or collect data about other users without their consent.</Bullet>
                 <Bullet>Impersonate any person or entity, or misrepresent your affiliation.</Bullet>
-                <Bullet>Engage in any activity that disrupts or interferes with the Platform's infrastructure.</Bullet>
+                <Bullet>Engage in any activity that disrupts or interferes with the Platform&apos;s infrastructure.</Bullet>
                 <Bullet>Attempt to gain unauthorized access to any part of the Platform or its related systems.</Bullet>
                 <Bullet>Use the Platform for any purpose that is unlawful or prohibited by these Terms.</Bullet>
               </ul>
