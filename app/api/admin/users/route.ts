@@ -28,7 +28,7 @@ export async function GET() {
 
   // Role/status from profiles, keyed by user id.
   const { data: profiles } = await admin
-    .from("profiles")
+    .from("users")
     .select("id, role, status");
   const byId = new Map(
     (profiles ?? []).map((p) => [p.id as string, p as { role: AdminRole; status: AdminStatus }]),

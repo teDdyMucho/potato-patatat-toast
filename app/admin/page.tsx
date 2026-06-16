@@ -17,7 +17,7 @@ async function getUserCount(): Promise<number | null> {
   try {
     const admin = createSupabaseAdminClient();
     const { count, error } = await admin
-      .from("profiles")
+      .from("users")
       .select("id", { count: "exact", head: true });
     return error ? null : count ?? null;
   } catch {

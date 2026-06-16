@@ -50,7 +50,7 @@ function getRedirectTarget(): string {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, ready, login, signup, loginWithGoogle } = useAuth();
+  const { user, ready, isAdmin, login, signup, loginWithGoogle } = useAuth();
 
   const [mode, setMode] = useState<Mode>("login");
   const [name, setName] = useState("");
@@ -66,8 +66,8 @@ export default function LoginPage() {
 
   // Already signed in? Skip straight to the destination.
   useEffect(() => {
-    if (ready && user) router.replace(getRedirectTarget());
-  }, [ready, user, router]);
+    if (ready && user) router.replace(isAdmin ? "/admin" : getRedirectTarget());
+  }, [ready, user, isAdmin, router]);
 
   // Reflect status passed back via the URL (Google error, or email verified).
   useEffect(() => {
@@ -123,7 +123,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.replace(getRedirectTarget());
+    router.replace(isAdmin ? "/admin" : getRedirectTarget());
   };
 
   const switchMode = (next: Mode) => {

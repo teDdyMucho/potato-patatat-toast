@@ -32,7 +32,7 @@ export async function POST(
 
   const admin = createSupabaseAdminClient();
   const { error } = await admin
-    .from("profiles")
+    .from("users")
     .update({ role })
     .eq("id", params.id);
 

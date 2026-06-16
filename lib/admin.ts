@@ -24,7 +24,7 @@ export async function checkAdmin(): Promise<AdminCheck> {
   if (!user) return { status: "unauthenticated" };
 
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("users")
     .select("role, status")
     .eq("id", user.id)
     .single();
@@ -69,7 +69,7 @@ export async function checkStaff(): Promise<AdminCheck> {
   if (!user) return { status: "unauthenticated" };
 
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("users")
     .select("role, status")
     .eq("id", user.id)
     .single();

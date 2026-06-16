@@ -38,7 +38,7 @@ export async function POST(
 
   // 1) Reflect it in profiles (drives the admin UI + the layout guard).
   const { error: profileErr } = await admin
-    .from("profiles")
+    .from("users")
     .update({ status })
     .eq("id", params.id);
   if (profileErr) {

@@ -31,6 +31,7 @@ export default function BlogManager() {
   const [editing, setEditing] = useState<BlogPost | null>(null);
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmPost, setConfirmPost] = useState<BlogPost | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,7 +71,13 @@ export default function BlogManager() {
   };
 
   const remove = async (post: BlogPost) => {
-    if (!confirm(`Delete "${post.title}"? This can't be undone.`)) return;
+    setConfirmPost(post);
+  };
+
+  const confirmRemove = async () => {
+    if (!confirmPost) return;
+    const post = confirmPost;
+    setConfirmPost(null);
     setDeletingId(post.id);
     setError("");
     try {
@@ -237,6 +244,44 @@ export default function BlogManager() {
           onSave={save}
           slugify={slugify}
         />
+      )}
+
+      {confirmPost && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setConfirmPost(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-card border border-border bg-surface p-6 shadow-2xl shadow-black/50"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-1 flex items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-500/15">
+                <Trash2 size={16} className="text-red-400" />
+              </span>
+              <h3 className="font-syne text-[17px] font-bold text-body">Delete post</h3>
+            </div>
+            <p className="mt-3 text-[14px] font-dm text-muted leading-relaxed">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-body">&ldquo;{confirmPost.title}&rdquo;</span>?
+              This can&apos;t be undone.
+            </p>
+            <div className="mt-6 flex justify-end gap-2.5">
+              <button
+                onClick={() => setConfirmPost(null)}
+                className="rounded-lg border border-border px-4 py-2 text-[13px] font-dm font-semibold text-body transition-colors hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRemove}
+                className="rounded-lg bg-red-500/90 px-4 py-2 text-[13px] font-dm font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
