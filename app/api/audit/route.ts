@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 export const runtime = "nodejs";
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const cookieStore = cookies();
 
   const supabase = createServerClient(
