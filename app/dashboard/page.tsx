@@ -194,6 +194,7 @@ export default function DashboardPage() {
                   {hasReview && (
                     <SidebarItem icon={Briefcase} label="Project Review" href="/review" badge={pendingCount > 0 ? String(pendingCount) : undefined} onClick={closeMobileDrawer} />
                   )}
+                  <SidebarItem icon={BarChart2} label="Business Audit" href="/dashboard/audit" onClick={closeMobileDrawer} />
                   <SidebarItem icon={Newspaper} label="Blog" href="/blog" onClick={closeMobileDrawer} />
                   <SidebarItem icon={CalendarCheck} label="Consultation" href="/contact" onClick={closeMobileDrawer} />
                 </div>
@@ -285,6 +286,7 @@ export default function DashboardPage() {
               />
             )}
 
+            <SidebarItem icon={BarChart2} label="Business Audit" href="/dashboard/audit" />
             <SidebarItem icon={Newspaper} label="Blog" href="/blog" />
             <SidebarItem icon={CalendarCheck} label="Consultation" href="/contact" />
           </div>

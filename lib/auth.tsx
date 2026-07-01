@@ -33,9 +33,16 @@ type AuthResult =
   | { ok: true; verificationSent?: boolean }
   | { ok: false; error: string };
 
+export type SignupOptions = {
+  accountType?: "individual" | "business";
+  businessName?: string;
+  websiteUrl?: string;
+  businessCategory?: string;
+};
+
 type AuthContextValue = {
   user: User | null;
-  /** Current user's role from `public.profiles` ('user' | 'admin' | 'staff'), or null when signed out. */
+  /** Current user's role from `public.users` ('user' | 'admin' | 'staff'), or null when signed out. */
   role: string | null;
   /** Convenience flag for gating admin-only UI. */
   isAdmin: boolean;
@@ -44,7 +51,7 @@ type AuthContextValue = {
   /** False until the initial session check completes. */
   ready: boolean;
   login: (email: string, password: string) => Promise<AuthResult>;
-  signup: (name: string, email: string, password: string) => Promise<AuthResult>;
+  signup: (name: string, email: string, password: string, opts?: SignupOptions) => Promise<AuthResult>;
   loginWithGoogle: (next: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
 };
@@ -136,26 +143,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signup = useCallback<AuthContextValue["signup"]>(
-    async (name, email, password) => {
+    async (name, email, password, opts) => {
       if (!supabase) return { ok: false, error: NOT_CONFIGURED };
-      const { data, error } = await supabase.auth.signUp({
+
+      // Create user via server route (admin client, email auto-confirmed — no verification email)
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          accountType: opts?.accountType,
+          businessName: opts?.businessName,
+          websiteUrl: opts?.websiteUrl,
+          businessCategory: opts?.businessCategory,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) return { ok: false, error: json.error || "Signup failed." };
+
+      // Auto sign-in immediately (no email verification needed)
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
-        options: {
-          data: { full_name: name.trim() },
-          emailRedirectTo: `${window.location.origin}/login?verified=1`,
-        },
       });
-      if (error) return { ok: false, error: error.message };
+      if (signInError) return { ok: false, error: signInError.message };
 
-      // Supabase returns a user with no identities when the email already exists
-      // (anti-enumeration). Treat that as "already registered".
-      if (data.user && (data.user.identities?.length ?? 0) === 0) {
-        return { ok: false, error: "An account with that email already exists." };
-      }
-
-      // No session → email confirmation is required.
-      if (!data.session) return { ok: true, verificationSent: true };
       return { ok: true };
     },
     [supabase],

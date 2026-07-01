@@ -6,15 +6,18 @@ import Link from "next/link";
 import {
   ArrowRight,
   Bot,
+  Building2,
+  Check,
   Eye,
   EyeOff,
   Globe,
   Lock,
   Mail,
   User as UserIcon,
+  User2,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useAuth } from "@/lib/auth";
+import { useAuth, type SignupOptions } from "@/lib/auth";
 import { Akt3DLogo } from "@/components/ui/akt-3d-logo";
 import { GLSLHills } from "@/components/ui/glsl-hills";
 
@@ -62,7 +65,16 @@ export default function LoginPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [subscribeNewsletter, setSubscribeNewsletter] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [waitingForAudit, setWaitingForAudit] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Multi-step signup
+  const [showAccountTypeModal, setShowAccountTypeModal] = useState(false);
+  const [pendingAccountType, setPendingAccountType] = useState<"individual" | "business" | null>(null);
+  const [showWebsiteStep, setShowWebsiteStep] = useState(false);
+  const [businessName, setBusinessName] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [businessCategory, setBusinessCategory] = useState("");
 
   // Already signed in? Skip straight to the destination.
   useEffect(() => {
@@ -73,7 +85,6 @@ export default function LoginPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("error") === "oauth") setError("Google sign-in failed. Please try again.");
-    if (params.get("verified") === "1") setNotice("Your email is verified — you can now log in.");
   }, []);
 
   const handleGoogle = async () => {
@@ -88,42 +99,110 @@ export default function LoginPage() {
     // On success the browser redirects to Google.
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setNotice("");
-
-    if (mode === "signup" && password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
+  const doSignup = async (opts?: SignupOptions) => {
     setSubmitting(true);
-
-    const result =
-      mode === "login"
-        ? await login(email, password)
-        : await signup(name, email, password);
-
+    const result = await signup(name, email, password, opts);
     if (!result.ok) {
       setError(result.error);
       setSubmitting(false);
       return;
     }
 
-    // Sign-up that needs email verification: don't log in — prompt to check inbox.
-    if (mode === "signup" && result.verificationSent) {
-      setNotice(
-        `We sent a verification link to ${email.trim()}. Click it to activate your account, then log in.`,
-      );
-      setMode("login");
-      setPassword("");
-      setConfirmPassword("");
-      setSubmitting(false);
+    // For business accounts: call scraper, await the response, then save to DB
+    if (opts?.accountType === "business" && opts.websiteUrl) {
+      setWaitingForAudit(true);
+
+      try {
+        // n8n responds directly with the audit JSON — await it (can take ~60s)
+        const scraperRes = await fetch(
+          "https://primary-production-6722.up.railway.app/webhook/scraper",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              event: "business_signup",
+              name: name.trim(),
+              email: email.trim().toLowerCase(),
+              business_name: opts.businessName ?? "",
+              website_url: opts.websiteUrl ?? "",
+              business_category: opts.businessCategory ?? "",
+            }),
+          },
+        );
+
+        if (scraperRes.ok) {
+          const auditData = await scraperRes.json();
+          // Forward the scraper output to our own webhook route to save in DB
+          await fetch("/api/webhook/audit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(auditData),
+          });
+        }
+      } catch {
+        // Scraper timed out or failed — proceed anyway, audit page shows empty state
+      }
+
+      setWaitingForAudit(false);
+      router.replace("/dashboard/audit");
       return;
     }
 
     router.replace(isAdmin ? "/admin" : getRedirectTarget());
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setNotice("");
+
+    if (mode === "login") {
+      setSubmitting(true);
+      const result = await login(email, password);
+      if (!result.ok) {
+        setError(result.error);
+        setSubmitting(false);
+        return;
+      }
+      router.replace(isAdmin ? "/admin" : getRedirectTarget());
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    if (pendingAccountType === "business") {
+      setShowWebsiteStep(true);
+    } else {
+      doSignup({ accountType: "individual" });
+    }
+  };
+
+  // Called when "Sign up" link is clicked — show account type picker first
+  const handleSignUpClick = () => {
+    setShowAccountTypeModal(true);
+  };
+
+  const handleAccountTypePick = (type: "individual" | "business") => {
+    setPendingAccountType(type);
+    setShowAccountTypeModal(false);
+    setMode("signup");
+  };
+
+  const handleBusinessSignup = async () => {
+    if (!businessName.trim()) {
+      setError("Business name is required.");
+      return;
+    }
+    setShowWebsiteStep(false);
+    doSignup({
+      accountType: "business",
+      businessName,
+      websiteUrl,
+      businessCategory,
+    });
   };
 
   const switchMode = (next: Mode) => {
@@ -133,6 +212,12 @@ export default function LoginPage() {
     setConfirmPassword("");
     setAgreedToTerms(false);
     setSubscribeNewsletter(true);
+    setShowAccountTypeModal(false);
+    setShowWebsiteStep(false);
+    setPendingAccountType(null);
+    setBusinessName("");
+    setWebsiteUrl("");
+    setBusinessCategory("");
   };
 
   return (
@@ -205,7 +290,7 @@ export default function LoginPage() {
         <div className="w-full max-w-[480px] lg:shrink-0 [perspective:1600px]">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={mode}
+              key={showWebsiteStep ? "business-info" : mode}
               initial={{ rotateY: 90, opacity: 0 }}
               animate={{ rotateY: 0, opacity: 1 }}
               exit={{ rotateY: -90, opacity: 0 }}
@@ -217,9 +302,108 @@ export default function LoginPage() {
               }}
               className="rounded-card border border-white/10 bg-surface/70 p-10 shadow-2xl shadow-black/40 backdrop-blur-2xl"
             >
-              <p className="accent-bar text-[13px] font-dm font-semibold text-muted uppercase tracking-widest mb-3">
-                {mode === "login" ? "Welcome back" : "Create your account"}
-              </p>
+            {showWebsiteStep ? (
+              /* ── Business info card ── */
+              <div>
+                <div className="mb-5 flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 border border-primary/30">
+                    <Building2 size={18} style={{ color: "#0ABFA3" }} />
+                  </span>
+                  <div>
+                    <p className="text-[11px] font-dm font-semibold uppercase tracking-widest text-muted">
+                      Step 2 of 2
+                    </p>
+                    <h3 className="font-syne text-[20px] font-bold text-body leading-tight">
+                      Business info
+                    </h3>
+                  </div>
+                </div>
+                <p className="text-[14px] font-dm text-muted mb-6">
+                  Tell us about your business so we can set up your account.
+                </p>
+                <div className="space-y-4">
+                  <label className="block">
+                    <span className="block text-[12px] font-dm font-semibold text-muted uppercase tracking-wide mb-2">
+                      Business name <span className="text-red-400">*</span>
+                    </span>
+                    <input
+                      type="text"
+                      value={businessName}
+                      onChange={(e) => setBusinessName(e.target.value)}
+                      placeholder="Acme Corp"
+                      className="w-full bg-background border border-border rounded-lg px-4 py-3 text-[15px] font-dm text-body placeholder:text-muted/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="block text-[12px] font-dm font-semibold text-muted uppercase tracking-wide mb-2">
+                      Website URL <span className="text-muted/50">(optional)</span>
+                    </span>
+                    <input
+                      type="url"
+                      value={websiteUrl}
+                      onChange={(e) => setWebsiteUrl(e.target.value)}
+                      placeholder="https://yoursite.com"
+                      className="w-full bg-background border border-border rounded-lg px-4 py-3 text-[15px] font-dm text-body placeholder:text-muted/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors"
+                    />
+                  </label>
+                  <div>
+                    <span className="block text-[12px] font-dm font-semibold text-muted uppercase tracking-wide mb-2">
+                      Business category <span className="text-muted/50">(optional)</span>
+                    </span>
+                    <select
+                      value={businessCategory}
+                      onChange={(e) => setBusinessCategory(e.target.value)}
+                      className="w-full bg-background border border-border rounded-lg px-4 py-3 text-[15px] font-dm text-body focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40 transition-colors"
+                    >
+                      <option value="">Select category…</option>
+                      <option>Real Estate</option>
+                      <option>E-commerce</option>
+                      <option>Marketing &amp; Advertising</option>
+                      <option>Healthcare</option>
+                      <option>Finance &amp; Accounting</option>
+                      <option>Legal</option>
+                      <option>Technology &amp; SaaS</option>
+                      <option>Education</option>
+                      <option>Construction &amp; Trades</option>
+                      <option>Hospitality &amp; Events</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                </div>
+                {error && (
+                  <p className="mt-4 text-[14px] font-dm text-red-400" role="alert">{error}</p>
+                )}
+                <div className="mt-6 flex gap-3">
+                  <button
+                    onClick={() => { setShowWebsiteStep(false); setShowAccountTypeModal(true); }}
+                    className="flex-1 rounded-lg border border-border py-3 text-[14px] font-dm font-semibold text-body transition-colors hover:bg-white/5"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleBusinessSignup}
+                    disabled={submitting}
+                    className="flex-1 flex items-center justify-center gap-2 rounded-lg py-3 text-[14px] font-dm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                    style={{ background: "#0ABFA3" }}
+                  >
+                    {submitting ? "Creating…" : <><Check size={16} /> Create account</>}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* ── Login / Signup card ── */
+              <div>
+              <div className="flex items-center gap-2 mb-3">
+                <p className="accent-bar text-[13px] font-dm font-semibold text-muted uppercase tracking-widest">
+                  {mode === "login" ? "Welcome back" : "Create your account"}
+                </p>
+                {mode === "signup" && pendingAccountType && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-dm font-semibold text-primary">
+                    {pendingAccountType === "business" ? <Building2 size={11} /> : <User2 size={11} />}
+                    {pendingAccountType === "business" ? "Business" : "Individual"}
+                  </span>
+                )}
+              </div>
               <h3
                 className="font-syne text-body mb-2"
                 style={{ fontSize: "32px", fontWeight: 800, letterSpacing: "-0.02em" }}
@@ -400,7 +584,7 @@ export default function LoginPage() {
                     Don&apos;t have an account?{" "}
                     <button
                       type="button"
-                      onClick={() => switchMode("signup")}
+                      onClick={handleSignUpClick}
                       className="text-primary font-semibold hover:underline"
                     >
                       Sign up
@@ -419,10 +603,103 @@ export default function LoginPage() {
                   </>
                 )}
               </p>
+              </div>
+            )}
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
+
+      {/* ── Audit processing overlay ───────────────────────────── */}
+      {waitingForAudit && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm px-6">
+          <div className="w-full max-w-sm rounded-card border border-white/10 bg-surface/90 p-10 shadow-2xl text-center backdrop-blur-2xl">
+            <div className="flex justify-center mb-6">
+              <span className="relative flex h-16 w-16 items-center justify-center rounded-full border border-primary/30 bg-primary/10">
+                <ArrowRight size={28} style={{ color: "#0ABFA3" }} className="animate-pulse" />
+              </span>
+            </div>
+            <h3 className="font-syne text-[20px] font-bold text-body mb-2">Analysing your business</h3>
+            <p className="text-[14px] font-dm text-muted leading-relaxed">
+              We&apos;re running a full audit on your website — SEO, visibility, Google profile, and more.
+              This takes about a minute.
+            </p>
+            <div className="mt-6 flex items-center justify-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
+              <span className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
+              <span className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: "300ms" }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 2: Account type picker ────────────────────────── */}
+      {showAccountTypeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="w-full max-w-md rounded-card border border-white/10 bg-surface/90 p-8 shadow-2xl shadow-black/60 backdrop-blur-2xl">
+            <p className="accent-bar mb-1 text-[12px] font-dm font-semibold uppercase tracking-widest text-muted">
+              Account type
+            </p>
+            <h3 className="font-syne text-[22px] font-bold text-body mb-2">
+              Who&apos;s signing up?
+            </h3>
+            <p className="text-[14px] font-dm text-muted mb-7">
+              Choose your account type. You can&apos;t change this later.
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* Individual */}
+              <button
+                onClick={() => handleAccountTypePick("individual")}
+                className="group flex flex-col items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-6 text-center transition-all hover:border-primary/50 hover:bg-primary/5"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 group-hover:border-primary/40 group-hover:bg-primary/10 transition-all">
+                  <User2 size={22} className="text-muted group-hover:text-primary transition-colors" />
+                </span>
+                <span>
+                  <span className="block font-syne text-[15px] font-bold text-body">Individual</span>
+                  <span className="mt-1 block text-[12px] font-dm text-muted leading-relaxed">
+                    Personal use or freelancer
+                  </span>
+                </span>
+              </button>
+
+              {/* Business */}
+              <button
+                onClick={() => handleAccountTypePick("business")}
+                className="group flex flex-col items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-6 text-center transition-all hover:border-primary/50 hover:bg-primary/5"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 group-hover:border-primary/40 group-hover:bg-primary/10 transition-all">
+                  <Building2 size={22} className="text-muted group-hover:text-primary transition-colors" />
+                </span>
+                <span>
+                  <span className="block font-syne text-[15px] font-bold text-body">Business</span>
+                  <span className="mt-1 block text-[12px] font-dm text-muted leading-relaxed">
+                    Team, agency, or company
+                  </span>
+                </span>
+              </button>
+            </div>
+
+            <div className="mt-5 flex items-center justify-center gap-4 text-[13px] font-dm text-muted">
+              <button
+                onClick={() => setShowAccountTypeModal(false)}
+                className="hover:text-body transition-colors"
+              >
+                Cancel
+              </button>
+              <span>·</span>
+              <button
+                onClick={() => { setShowAccountTypeModal(false); setMode("login"); }}
+                className="text-primary font-semibold hover:underline"
+              >
+                Log in instead
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </main>
   );
 }
