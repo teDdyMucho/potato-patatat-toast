@@ -520,15 +520,14 @@ function AIToolsContent() {
                       <p className="mb-6 text-[12px] font-dm leading-relaxed text-white/40">
                         {activeTool.sampleNote}
                       </p>
-                      <Link
-                        href="/contact"
+                      <button
+                        type="button"
                         onClick={closeSample}
                         className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-dm font-bold text-white transition-opacity hover:opacity-90"
                         style={{ background: "linear-gradient(135deg, #0ABFA3 0%, #089080 100%)" }}
                       >
-                        Book a Free Consultation
-                        <ArrowUpRight size={15} />
-                      </Link>
+                        Close
+                      </button>
                     </motion.div>
                   )}
                 </div>
