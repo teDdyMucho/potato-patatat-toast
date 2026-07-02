@@ -90,14 +90,29 @@ export default async function AiToolSamplePage({
               {tool.sampleTitle}
             </div>
             <div className="space-y-3">
-              {tool.sampleItems.map((item, i) => (
-                <div key={i} className="rounded-xl border border-border bg-white/[0.03] p-4">
-                  <p className="mb-1 text-[10px] font-dm font-semibold uppercase tracking-widest" style={{ color: "#0ABFA3" }}>
-                    {item.label}
-                  </p>
-                  <p className="text-[14px] font-dm leading-relaxed text-body/80">{item.text}</p>
-                </div>
-              ))}
+              {tool.sampleItems.map((item, i) => {
+                const isAi = item.label.toLowerCase().includes("ai");
+                return (
+                  <div key={i} className={`flex ${isAi ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-4 py-3 sm:max-w-[75%] ${
+                        isAi ? "rounded-tr-sm text-white" : "rounded-tl-sm border border-border bg-white/[0.04]"
+                      }`}
+                      style={isAi ? { background: "linear-gradient(135deg, #0ABFA3 0%, #089080 100%)" } : undefined}
+                    >
+                      <p
+                        className="mb-1 text-[10px] font-dm font-semibold uppercase tracking-widest"
+                        style={{ color: isAi ? "rgba(255,255,255,0.75)" : "#0ABFA3" }}
+                      >
+                        {item.label}
+                      </p>
+                      <p className={`text-[14px] font-dm leading-relaxed ${isAi ? "text-white" : "text-body/80"}`}>
+                        {item.text}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <p className="mt-6 text-[13px] font-dm leading-relaxed text-muted">
               {tool.sampleNote}
