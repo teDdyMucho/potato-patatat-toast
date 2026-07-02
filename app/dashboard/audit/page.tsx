@@ -68,6 +68,65 @@ function AuditCard({ title, icon, children }: { title: string; icon: React.React
   );
 }
 
+function SidebarNav({
+  hasReview,
+  pendingCount,
+  onClick,
+}: {
+  hasReview: boolean;
+  pendingCount: number;
+  onClick?: () => void;
+}) {
+  return (
+    <nav className="flex flex-col flex-1 overflow-y-auto py-4 px-3">
+      <div className="space-y-1">
+        <SidebarItem icon={Bot} label="AI Tools" href="/dashboard" onClick={onClick} />
+        {hasReview && <SidebarItem icon={Briefcase} label="Project Review" href="/review" badge={pendingCount > 0 ? String(pendingCount) : undefined} onClick={onClick} />}
+        <SidebarItem icon={BarChart2} label="Business Audit" href="/dashboard/audit" active onClick={onClick} />
+        <SidebarItem icon={Newspaper} label="Blog" href="/blog" onClick={onClick} />
+        <SidebarItem icon={CalendarCheck} label="Consultation" href="/contact" onClick={onClick} />
+      </div>
+    </nav>
+  );
+}
+
+function UserSection({
+  user,
+  userMenuOpen,
+  setUserMenuOpen,
+  userMenuRef,
+  logout,
+  onLinkClick,
+}: {
+  user: { name: string; email: string };
+  userMenuOpen: boolean;
+  setUserMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  userMenuRef: React.RefObject<HTMLDivElement>;
+  logout: () => void;
+  onLinkClick?: () => void;
+}) {
+  return (
+    <div className="border-t border-white/[0.07] p-3" ref={userMenuRef}>
+      <button onClick={() => setUserMenuOpen((o) => !o)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-white/[0.05]">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#062B26]"><UserRound size={15} style={{ color: "#0ABFA3" }} /></div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[12px] font-dm font-semibold text-white">{user.name.split(" ")[0]}</p>
+          <p className="truncate text-[10px] font-dm text-white/40">{user.email}</p>
+        </div>
+        <ChevronDown size={13} className={`shrink-0 text-white/40 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
+      </button>
+      <AnimatePresence>
+        {userMenuOpen && (
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} transition={{ duration: 0.15 }} className="mt-1 overflow-hidden rounded-xl border border-white/10 bg-[#0f1012] shadow-xl">
+            <Link href="/account" onClick={() => { setUserMenuOpen(false); onLinkClick?.(); }} className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-dm text-white/70 transition-colors hover:bg-white/5 hover:text-white"><Settings size={14} /> Manage Account</Link>
+            <button onClick={() => { logout(); setUserMenuOpen(false); }} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[13px] font-dm text-white/70 transition-colors hover:bg-white/5 hover:text-white"><LogOut size={14} /> Log out</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 /* ─── Page ─── */
 export default function DashboardAuditPage() {
   const router = useRouter();
@@ -137,40 +196,6 @@ export default function DashboardAuditPage() {
   const sl = audit?.social_links;
   const visScore = String(sv?.visibility_score ?? "").toLowerCase();
 
-  /* ── Sidebar shared render ── */
-  const SidebarNav = ({ onClick }: { onClick?: () => void }) => (
-    <nav className="flex flex-col flex-1 overflow-y-auto py-4 px-3">
-      <div className="space-y-1">
-        <SidebarItem icon={Bot} label="AI Tools" href="/dashboard" onClick={onClick} />
-        {hasReview && <SidebarItem icon={Briefcase} label="Project Review" href="/review" badge={pendingCount > 0 ? String(pendingCount) : undefined} onClick={onClick} />}
-        <SidebarItem icon={BarChart2} label="Business Audit" href="/dashboard/audit" active onClick={onClick} />
-        <SidebarItem icon={Newspaper} label="Blog" href="/blog" onClick={onClick} />
-        <SidebarItem icon={CalendarCheck} label="Consultation" href="/contact" onClick={onClick} />
-      </div>
-    </nav>
-  );
-
-  const UserSection = ({ onLinkClick }: { onLinkClick?: () => void }) => (
-    <div className="border-t border-white/[0.07] p-3" ref={userMenuRef}>
-      <button onClick={() => setUserMenuOpen((o) => !o)} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-white/[0.05]">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#062B26]"><UserRound size={15} style={{ color: "#0ABFA3" }} /></div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[12px] font-dm font-semibold text-white">{user.name.split(" ")[0]}</p>
-          <p className="truncate text-[10px] font-dm text-white/40">{user.email}</p>
-        </div>
-        <ChevronDown size={13} className={`shrink-0 text-white/40 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} />
-      </button>
-      <AnimatePresence>
-        {userMenuOpen && (
-          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} transition={{ duration: 0.15 }} className="mt-1 overflow-hidden rounded-xl border border-white/10 bg-[#0f1012] shadow-xl">
-            <Link href="/account" onClick={() => { setUserMenuOpen(false); onLinkClick?.(); }} className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] font-dm text-white/70 transition-colors hover:bg-white/5 hover:text-white"><Settings size={14} /> Manage Account</Link>
-            <button onClick={() => { logout(); setUserMenuOpen(false); }} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[13px] font-dm text-white/70 transition-colors hover:bg-white/5 hover:text-white"><LogOut size={14} /> Log out</button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-
   return (
     <div className="relative flex h-screen flex-col bg-[#050608] lg:flex-row">
 
@@ -202,8 +227,8 @@ export default function DashboardAuditPage() {
                 </Link>
                 <button onClick={closeMobileDrawer} aria-label="Close menu" className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 text-white/50 transition-colors hover:text-white"><X size={16} /></button>
               </div>
-              <SidebarNav onClick={closeMobileDrawer} />
-              <UserSection onLinkClick={closeMobileDrawer} />
+              <SidebarNav hasReview={hasReview} pendingCount={pendingCount} onClick={closeMobileDrawer} />
+              <UserSection user={user} userMenuOpen={userMenuOpen} setUserMenuOpen={setUserMenuOpen} userMenuRef={userMenuRef} logout={logout} onLinkClick={closeMobileDrawer} />
             </motion.aside>
           </>
         )}
@@ -218,8 +243,8 @@ export default function DashboardAuditPage() {
               <div className="leading-none"><p className="font-syne text-[14px] font-extrabold tracking-wide text-white">AKT</p><p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/40">Workspace</p></div>
             </Link>
           </div>
-          <SidebarNav />
-          <UserSection />
+          <SidebarNav hasReview={hasReview} pendingCount={pendingCount} />
+          <UserSection user={user} userMenuOpen={userMenuOpen} setUserMenuOpen={setUserMenuOpen} userMenuRef={userMenuRef} logout={logout} />
         </div>
       </aside>
 

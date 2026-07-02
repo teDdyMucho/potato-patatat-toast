@@ -79,7 +79,7 @@ const NOT_CONFIGURED =
   "Auth isn't configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const supabase = useMemo(makeClient, []);
+  const supabase = useMemo(() => makeClient(), []);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [ready, setReady] = useState(false);

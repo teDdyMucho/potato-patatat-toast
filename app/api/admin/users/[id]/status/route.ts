@@ -17,8 +17,9 @@ const BAN_DURATION = "876000h";
  */
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const guard = await requireAdminApi();
   if (!guard.ok) return guard.response;
 
@@ -30,7 +31,7 @@ export async function POST(
     );
   }
 
-  if (params.id === guard.userId && status === "suspended") {
+  if (id === guard.userId && status === "suspended") {
     return NextResponse.json({ error: "You can't suspend yourself." }, { status: 400 });
   }
 
@@ -40,13 +41,13 @@ export async function POST(
   const { error: profileErr } = await admin
     .from("users")
     .update({ status })
-    .eq("id", params.id);
+    .eq("id", id);
   if (profileErr) {
     return NextResponse.json({ error: profileErr.message }, { status: 500 });
   }
 
   // 2) Enforce it at the auth layer (block / restore login).
-  const { error: authErr } = await admin.auth.admin.updateUserById(params.id, {
+  const { error: authErr } = await admin.auth.admin.updateUserById(id, {
     ban_duration: status === "suspended" ? BAN_DURATION : "none",
   });
   if (authErr) {

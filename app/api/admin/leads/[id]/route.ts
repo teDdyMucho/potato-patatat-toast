@@ -12,8 +12,9 @@ const STATUSES: LeadStatus[] = ["new", "contacted", "closed"];
 /** PATCH /api/admin/leads/:id — update status and/or notes. Admin-only. */
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const guard = await requireAdminApi();
   if (!guard.ok) return guard.response;
 
@@ -39,7 +40,7 @@ export async function PATCH(
   const { data, error } = await admin
     .from("leads")
     .update(patch)
-    .eq("id", params.id)
+    .eq("id", id)
     .select(LEAD_COLUMNS)
     .single();
 
@@ -50,13 +51,14 @@ export async function PATCH(
 /** DELETE /api/admin/leads/:id — remove a lead. Admin-only. */
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const guard = await requireAdminApi();
   if (!guard.ok) return guard.response;
 
   const admin = createSupabaseAdminClient();
-  const { error } = await admin.from("leads").delete().eq("id", params.id);
+  const { error } = await admin.from("leads").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

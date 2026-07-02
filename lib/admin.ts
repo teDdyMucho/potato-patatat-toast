@@ -15,7 +15,7 @@ export type AdminCheck =
   | { status: "forbidden"; email: string };
 
 export async function checkAdmin(): Promise<AdminCheck> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const {
     data: { user },
@@ -60,7 +60,7 @@ export async function requireAdminApi(): Promise<
  * Server-side staff gate. Allows both 'staff' and 'admin' roles through.
  */
 export async function checkStaff(): Promise<AdminCheck> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
 
   const {
     data: { user },

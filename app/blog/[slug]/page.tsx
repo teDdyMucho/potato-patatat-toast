@@ -29,7 +29,7 @@ const dateFmt = new Intl.DateTimeFormat("en-US", {
 // Published post by slug from Supabase, else the static fallback, else null.
 async function getArticle(slug: string): Promise<Article | null> {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data } = await supabase
       .from("blog_posts")
       .select(BLOG_COLUMNS)
@@ -60,19 +60,20 @@ async function getArticle(slug: string): Promise<Article | null> {
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const article = await getArticle(params.slug);
+  const { slug } = await params;
+  const article = await getArticle(slug);
   if (!article) return { title: "Post not found | AKT" };
   return {
     title: `${article.title} | AKT Blog`,
     description: article.excerpt,
     keywords: article.tags.length ? article.tags : undefined,
-    alternates: { canonical: `https://aktservices.org/blog/${params.slug}` },
+    alternates: { canonical: `https://aktservices.org/blog/${slug}` },
     openGraph: {
       title: article.title,
       description: article.excerpt,
-      url: `https://aktservices.org/blog/${params.slug}`,
+      url: `https://aktservices.org/blog/${slug}`,
       siteName: "AKT Virtual Assistance Services",
       type: "article",
       images: article.imageUrl ? [{ url: article.imageUrl, alt: article.title }] : undefined,
@@ -89,9 +90,10 @@ export async function generateMetadata({
 export default async function BlogPostPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const article = await getArticle(params.slug);
+  const { slug } = await params;
+  const article = await getArticle(slug);
   if (!article) notFound();
 
   const paragraphs = article.content
@@ -170,7 +172,7 @@ export default async function BlogPostPage({
     "@graph": [
       {
         "@type": "BlogPosting",
-        "@id": `https://aktservices.org/blog/${params.slug}#article`,
+        "@id": `https://aktservices.org/blog/${slug}#article`,
         headline: article.title,
         description: article.excerpt,
         image: article.imageUrl
@@ -192,7 +194,7 @@ export default async function BlogPostPage({
         publisher: { "@id": "https://aktservices.org/#organization" },
         mainEntityOfPage: {
           "@type": "WebPage",
-          "@id": `https://aktservices.org/blog/${params.slug}`,
+          "@id": `https://aktservices.org/blog/${slug}`,
         },
         about: article.tags.slice(0, 3).map((tag) => ({
           "@type": "Thing",
@@ -208,7 +210,7 @@ export default async function BlogPostPage({
         itemListElement: [
           { "@type": "ListItem", position: 1, name: "Home", item: "https://aktservices.org" },
           { "@type": "ListItem", position: 2, name: "Blog", item: "https://aktservices.org/blog" },
-          { "@type": "ListItem", position: 3, name: article.title, item: `https://aktservices.org/blog/${params.slug}` },
+          { "@type": "ListItem", position: 3, name: article.title, item: `https://aktservices.org/blog/${slug}` },
         ],
       },
     ],

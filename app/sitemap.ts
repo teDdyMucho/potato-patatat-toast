@@ -18,7 +18,7 @@ const partnerSlugs = [
 
 async function getBlogSlugs(): Promise<{ slug: string; updatedAt: string }[]> {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data } = await supabase
       .from("blog_posts")
       .select("slug, updated_at")

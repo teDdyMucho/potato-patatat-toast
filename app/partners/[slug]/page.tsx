@@ -7,9 +7,9 @@ import Footer from "@/components/Footer";
 import { partnerCases } from "@/lib/partner-cases";
 
 type PageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 const DEDICATED_PAGES = ["proto-financial", "southland-roofing", "lucky7-distribution", "digitalflo", "kda-innovations", "kinnobot", "october-marketing", "branding561", "accelereight", "dadstudio"];
@@ -20,8 +20,9 @@ export function generateStaticParams() {
     .map((item) => ({ slug: item.slug }));
 }
 
-export function generateMetadata({ params }: PageProps): Metadata {
-  const item = partnerCases.find((partner) => partner.slug === params.slug);
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const item = partnerCases.find((partner) => partner.slug === slug);
 
   if (!item) {
     return {
@@ -35,8 +36,9 @@ export function generateMetadata({ params }: PageProps): Metadata {
   };
 }
 
-export default function PartnerCasePage({ params }: PageProps) {
-  const item = partnerCases.find((partner) => partner.slug === params.slug);
+export default async function PartnerCasePage({ params }: PageProps) {
+  const { slug } = await params;
+  const item = partnerCases.find((partner) => partner.slug === slug);
 
   if (!item) notFound();
 

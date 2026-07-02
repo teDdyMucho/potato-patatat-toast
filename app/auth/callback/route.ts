@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/ai-tools";
 
   if (code) {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       const { data: { user } } = await supabase.auth.getUser();

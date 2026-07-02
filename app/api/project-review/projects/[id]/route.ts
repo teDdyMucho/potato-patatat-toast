@@ -4,9 +4,10 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createSupabaseServerClient();
+  const { id } = await params;
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
     error: authError,
@@ -22,7 +23,7 @@ export async function DELETE(
   const { data: project, error: pError } = await admin
     .from("project_review_projects")
     .select("id, worker_id, file_url")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (pError || !project) {
@@ -53,7 +54,7 @@ export async function DELETE(
   const { error } = await admin
     .from("project_review_projects")
     .delete()
-    .eq("id", params.id);
+    .eq("id", id);
 
   if (error) {
     return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
@@ -64,9 +65,10 @@ export async function DELETE(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createSupabaseServerClient();
+  const { id } = await params;
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
     error: authError,
@@ -88,7 +90,7 @@ export async function PATCH(
   const { data: project, error: pError } = await admin
     .from("project_review_projects")
     .select("id, connection_id")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (pError || !project) {
@@ -115,7 +117,7 @@ export async function PATCH(
       client_feedback: feedback?.trim() || null,
       updated_at: new Date().toISOString(),
     })
-    .eq("id", params.id)
+    .eq("id", id)
     .select()
     .single();
 

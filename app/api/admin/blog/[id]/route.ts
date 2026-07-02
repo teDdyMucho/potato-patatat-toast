@@ -10,8 +10,9 @@ export const dynamic = "force-dynamic";
 /** PATCH /api/admin/blog/:id — update a post. Admin-only. */
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const guard = await requireAdminApi();
   if (!guard.ok) return guard.response;
 
@@ -39,7 +40,7 @@ export async function PATCH(
   const { data, error } = await admin
     .from("blog_posts")
     .update(patch)
-    .eq("id", params.id)
+    .eq("id", id)
     .select(BLOG_COLUMNS)
     .single();
 
@@ -53,13 +54,14 @@ export async function PATCH(
 /** DELETE /api/admin/blog/:id — remove a post. Admin-only. */
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const guard = await requireAdminApi();
   if (!guard.ok) return guard.response;
 
   const admin = createSupabaseAdminClient();
-  const { error } = await admin.from("blog_posts").delete().eq("id", params.id);
+  const { error } = await admin.from("blog_posts").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

@@ -13,8 +13,9 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const guard = await requireAdminApi();
   if (!guard.ok) return guard.response;
 
@@ -23,7 +24,7 @@ export async function POST(
     return NextResponse.json({ error: "role must be 'user' or 'admin'" }, { status: 400 });
   }
 
-  if (params.id === guard.userId && role !== "admin") {
+  if (id === guard.userId && role !== "admin") {
     return NextResponse.json(
       { error: "You can't remove your own admin access." },
       { status: 400 },
@@ -34,7 +35,7 @@ export async function POST(
   const { error } = await admin
     .from("users")
     .update({ role })
-    .eq("id", params.id);
+    .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

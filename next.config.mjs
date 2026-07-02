@@ -26,9 +26,6 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-  images: {
-    domains: [],
-  },
   async headers() {
     return [
       {

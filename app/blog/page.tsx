@@ -35,7 +35,7 @@ const blogDateFmt = new Intl.DateTimeFormat("en-US", {
 // Fetch only real published posts from Supabase. Returns [] when empty.
 async function getPosts(): Promise<PostCard[]> {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase
       .from("blog_posts")
       .select(BLOG_COLUMNS)

@@ -6,8 +6,8 @@ import { cookies } from "next/headers";
  * Used by the OAuth callback route to exchange the auth code and persist the
  * session cookie.
  */
-export function createSupabaseServerClient() {
-  const cookieStore = cookies();
+export async function createSupabaseServerClient() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

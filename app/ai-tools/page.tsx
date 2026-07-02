@@ -10,162 +10,60 @@ import {
   Zap,
   ArrowUpRight,
   MessageSquare,
-  FileText,
-  BarChart2,
-  Settings,
-  Bot,
-  Mail,
-  Calendar,
-  Target,
-  Wand2,
-  Megaphone,
+  Phone,
+  Send,
+  Workflow,
 } from "lucide-react";
 import Link from "next/link";
 
 const tools = [
   {
-    category: "Sales AI",
-    name: "Lead Qualifier",
+    category: "Voice AI",
+    name: "Retell AI",
     description:
-      "Paste your lead list and instantly get qualification scores, lead intent analysis, and personalized outreach angles for each prospect. Powered by Claude AI.",
-    icon: BarChart2,
+      "AI voice agent that answers, screens, and qualifies inbound and outbound calls 24/7 — books appointments straight into your calendar and hands off warm leads to your team.",
+    icon: Phone,
     color: "#0ABFA3",
     bg: "#062B26",
-    sessions: "1,247",
+    tag: "Powered by Retell AI",
     badge: "Most Popular",
   },
   {
-    category: "Sales AI",
-    name: "Cold Email Generator",
+    category: "GoHighLevel AI",
+    name: "Nurturing Sequence on GHL",
     description:
-      "Input your ICP, service, and value proposition — receive a complete multi-touch cold email sequence ready to deploy in your outreach tool.",
-    icon: Mail,
-    color: "#0ABFA3",
-    bg: "#062B26",
-    sessions: "892",
-    badge: null,
-  },
-  {
-    category: "Sales AI",
-    name: "Objection Handler",
-    description:
-      "Enter a sales objection and get professional, conversion-tested responses. Train your team or deploy directly in scripts.",
-    icon: MessageSquare,
-    color: "#0ABFA3",
-    bg: "#062B26",
-    sessions: "534",
-    badge: null,
-  },
-  {
-    category: "Content AI",
-    name: "Blog Post Writer",
-    description:
-      "SEO-optimized, E-E-A-T-ready blog posts targeting your exact keyword. 1500–3000 words, structured with H2/H3, FAQ, and internal link suggestions.",
-    icon: FileText,
+      "Automated multi-touch email + SMS nurture sequence built inside GoHighLevel — keeps leads warm with personalized, timed follow-ups until they're ready to buy.",
+    icon: Workflow,
     color: "#0ABFA3",
     bg: "#073B34",
-    sessions: "673",
+    tag: "Built on GoHighLevel",
     badge: null,
   },
   {
-    category: "Content AI",
-    name: "Social Caption Generator",
+    category: "GoHighLevel AI",
+    name: "Outreach Sequence on GHL",
     description:
-      "Generate platform-optimized captions for LinkedIn, Facebook, and Instagram from your content URL or paste-in text. Includes hashtag suggestions.",
-    icon: MessageSquare,
+      "Done-for-you cold outreach automation in GoHighLevel — multi-channel touchpoints, smart delays, and reply detection so your pipeline fills itself.",
+    icon: Send,
     color: "#0ABFA3",
     bg: "#073B34",
-    sessions: "1,103",
-    badge: "Most Used",
-  },
-  {
-    category: "Content AI",
-    name: "SEO Brief Generator",
-    description:
-      "Enter a target keyword and get a complete SEO content brief: intent analysis, outline, word count, related keywords, and competitor angle suggestions.",
-    icon: Target,
-    color: "#0ABFA3",
-    bg: "#073B34",
-    sessions: "445",
-    badge: null,
-  },
-  {
-    category: "Productivity AI",
-    name: "Meeting Summarizer",
-    description:
-      "Paste meeting notes or transcript — get structured action items, key decisions, follow-up owners, and deadlines in seconds.",
-    icon: Calendar,
-    color: "#0ABFA3",
-    bg: "#062B26",
-    sessions: "456",
-    badge: null,
-  },
-  {
-    category: "Productivity AI",
-    name: "Email Responder",
-    description:
-      "Paste any email and get a professional, tone-matched response draft ready to send or edit. Set the tone: formal, friendly, or assertive.",
-    icon: Mail,
-    color: "#0ABFA3",
-    bg: "#062B26",
-    sessions: "612",
-    badge: null,
-  },
-  {
-    category: "Automation AI",
-    name: "GoHighLevel Prompt Helper",
-    description:
-      "Generate GoHighLevel workflow triggers, email/SMS sequences, pipeline stage automations, and AI follow-up prompts — copy and deploy instantly.",
-    icon: Settings,
-    color: "#0ABFA3",
-    bg: "#073B34",
-    sessions: "788",
+    tag: "Built on GoHighLevel",
     badge: "New",
   },
   {
-    category: "Automation AI",
-    name: "Workflow Builder Assistant",
+    category: "GoHighLevel AI",
+    name: "Chat Bot on GHL",
     description:
-      "Describe your business process and get a step-by-step automation workflow mapped out — with suggested tools, triggers, and actions.",
-    icon: Bot,
-    color: "#0ABFA3",
-    bg: "#073B34",
-    sessions: "329",
-    badge: null,
-  },
-  {
-    category: "Design AI",
-    name: "Design Adjuster",
-    description:
-      "Upload a property photo, then brush a mask over just the area you want to change — a wall, the flooring, countertops, fixtures, or an empty room to restage. AI edits only inside your selection (inpainting) while everything outside it stays pixel-perfect, so you can tweak or restyle one region at a time and iterate, instead of regenerating the whole image.",
-    icon: Wand2,
-    color: "#0ABFA3",
-    bg: "#073B34",
-    sessions: "128",
-    badge: "New",
-  },
-  {
-    category: "Marketing AI",
-    name: "Business FB Ads",
-    description:
-      "Generate high-converting Facebook and Instagram ad copy for your business — headlines, primary text, and CTAs — tailored to your offer, audience, and objective. Powered by Claude AI for scroll-stopping ad creative that drives clicks.",
-    icon: Megaphone,
+      "AI chatbot embedded in your website and GoHighLevel conversations — answers FAQs, qualifies visitors, and routes hot leads to your sales team in real time.",
+    icon: MessageSquare,
     color: "#0ABFA3",
     bg: "#062B26",
-    sessions: "0",
+    tag: "Built on GoHighLevel",
     badge: "New",
   },
 ];
 
-const categories = [
-  "All",
-  "Sales AI",
-  "Content AI",
-  "Design AI",
-  "Productivity AI",
-  "Automation AI",
-  "Marketing AI",
-];
+const categories = ["All", "Voice AI", "GoHighLevel AI"];
 
 export default function AIToolsPage() {
   const router = useRouter();
@@ -179,25 +77,6 @@ export default function AIToolsPage() {
 
   const filtered =
     active === "All" ? tools : tools.filter((t) => t.category === active);
-
-  // Tools that have their own dedicated page.
-  const toolPages: Record<string, string> = {
-    "Design Adjuster": "/ai-tools/design-adjuster",
-  };
-
-  const handleTry = (toolName: string) => {
-    const dest = toolPages[toolName] ?? null;
-
-    // Gate behind login: not signed in → send to the login page, then come back.
-    if (ready && !user) {
-      router.push(`/login?redirect=${encodeURIComponent(dest ?? "/ai-tools")}`);
-      return;
-    }
-
-    // Signed in: open the tool's page if it has one.
-    if (dest) router.push(dest);
-    // (Other tools don't have a run experience wired up yet.)
-  };
 
   return (
     <>
@@ -214,14 +93,14 @@ export default function AIToolsPage() {
                 className="font-syne text-body mb-4"
                 style={{ fontSize: "clamp(32px, 4.5vw, 52px)", fontWeight: 800, letterSpacing: "-0.03em" }}
               >
-                Free AI tools.
+                Signature AI systems.
                 <br />
                 <span style={{ color: "#0ABFA3" }}>Real business results.</span>
               </h1>
               <p className="text-[16px] font-dm text-muted leading-relaxed">
-                Built with Claude AI — try AKT&apos;s AI tools for free. Create a
-                free account, no commitment. Experience the quality of our AI
-                work firsthand before you hire us to build it for your business.
+                The AI voice agents, GoHighLevel automations, and chatbots AKT
+                builds and deploys for clients. Book a free consultation and
+                we&apos;ll set one up for your business.
               </p>
             </div>
           </div>
@@ -323,19 +202,17 @@ export default function AIToolsPage() {
                       {tool.description}
                     </p>
 
-                    {/* Footer: sessions + action */}
+                    {/* Footer: tag + action */}
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[11px] font-dm text-muted">
-                        <span className="font-semibold text-body">{tool.sessions}</span> sessions
-                      </span>
-                      <button
-                        onClick={() => handleTry(tool.name)}
+                      <span className="text-[11px] font-dm text-muted">{tool.tag}</span>
+                      <Link
+                        href="/contact"
                         className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[12px] font-dm font-semibold text-white transition-opacity hover:opacity-90"
                         style={{ background: "#0ABFA3" }}
                       >
                         <Zap size={12} fill="white" />
-                        Try Now
-                      </button>
+                        Get Started
+                      </Link>
                     </div>
                   </div>
                 );

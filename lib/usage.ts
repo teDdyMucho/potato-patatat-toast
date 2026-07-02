@@ -16,7 +16,7 @@ export async function logToolUsage(tool: string): Promise<void> {
     let userId: string | null = null;
     let userEmail: string | null = null;
     try {
-      const supabase = createSupabaseServerClient();
+      const supabase = await createSupabaseServerClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();

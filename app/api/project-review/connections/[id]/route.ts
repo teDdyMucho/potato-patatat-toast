@@ -4,9 +4,10 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const supabase = createSupabaseServerClient();
+  const { id } = await params;
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
     error: authError,
@@ -27,7 +28,7 @@ export async function PATCH(
   const { data: conn } = await admin
     .from("project_review_connections")
     .select("id, worker_id, client_email")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (!conn) {
@@ -46,7 +47,7 @@ export async function PATCH(
   const { data, error } = await admin
     .from("project_review_connections")
     .update({ [field]: label.trim() })
-    .eq("id", params.id)
+    .eq("id", id)
     .select()
     .single();
 
