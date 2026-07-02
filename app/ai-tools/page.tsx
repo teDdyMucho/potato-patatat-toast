@@ -88,6 +88,7 @@ function AIToolsContent() {
           need: activeTool.contactNeed,
           message: `Requested a sample of "${activeTool.name}" from the AI Tools page.`,
           userId: user?.id ?? null,
+          toolSlug: activeTool.slug,
         }),
       });
       const data = await res.json().catch(() => ({}));
