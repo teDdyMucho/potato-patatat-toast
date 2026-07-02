@@ -91,12 +91,15 @@ export default async function AiToolSamplePage({
             </div>
             <div className="space-y-3">
               {tool.sampleItems.map((item, i) => {
+                // AI replies read like an incoming message (left); the
+                // caller/visitor is the one reaching out, so theirs reads
+                // like an outgoing message (right).
                 const isAi = item.label.toLowerCase().includes("ai");
                 return (
-                  <div key={i} className={`flex ${isAi ? "justify-end" : "justify-start"}`}>
+                  <div key={i} className={`flex ${isAi ? "justify-start" : "justify-end"}`}>
                     <div
                       className={`max-w-[85%] rounded-2xl px-4 py-3 sm:max-w-[75%] ${
-                        isAi ? "rounded-tr-sm text-white" : "rounded-tl-sm border border-border bg-white/[0.04]"
+                        isAi ? "rounded-tl-sm text-white" : "rounded-tr-sm border border-border bg-white/[0.04]"
                       }`}
                       style={isAi ? { background: "linear-gradient(135deg, #0ABFA3 0%, #089080 100%)" } : undefined}
                     >

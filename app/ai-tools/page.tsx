@@ -20,6 +20,7 @@ function AIToolsContent() {
   const [gateForm, setGateForm] = useState({ firstName: "", email: "", phone: "" });
   const [gateSubmitting, setGateSubmitting] = useState(false);
   const [gateError, setGateError] = useState("");
+  const [redirecting, setRedirecting] = useState(false);
 
   // Regular users get the personalised dashboard; admin/staff stay on this
   // page. Skipped while a tool's sample modal is open (or about to be reopened
@@ -38,6 +39,7 @@ function AIToolsContent() {
   const openSample = (tool: AiTool) => {
     setActiveTool(tool);
     setGateError("");
+    setRedirecting(false);
     setGateForm({
       firstName: user ? user.name.trim().split(" ")[0] ?? "" : "",
       email: user?.email ?? "",
@@ -45,7 +47,10 @@ function AIToolsContent() {
     });
   };
 
-  const closeSample = () => setActiveTool(null);
+  // Ignored while redirecting so the modal can't be dismissed mid-transition.
+  const closeSample = () => {
+    if (!redirecting) setActiveTool(null);
+  };
 
   const handleGetStarted = (tool: AiTool) => {
     // Not logged in — send them to log in first, then bounce back here to
@@ -87,14 +92,15 @@ function AIToolsContent() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "Something went wrong.");
-      const slug = activeTool.slug;
-      setActiveTool(null);
-      router.push(`/ai-tools/sample/${slug}`);
+      // Keep the modal open in a "redirecting" state instead of closing it
+      // immediately — navigation still has to fetch the sample page, and
+      // closing right away left a jarring flash back to the tools grid.
+      setRedirecting(true);
+      router.push(`/ai-tools/sample/${activeTool.slug}`);
     } catch (err) {
       setGateError(
         err instanceof Error ? err.message : "Couldn't unlock the sample. Please try again.",
       );
-    } finally {
       setGateSubmitting(false);
     }
   };
@@ -311,7 +317,8 @@ function AIToolsContent() {
                   </div>
                   <button
                     onClick={closeSample}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-white/40 transition-colors hover:bg-white/5 hover:text-white"
+                    disabled={redirecting}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-white/40 transition-colors hover:bg-white/5 hover:text-white disabled:opacity-30"
                     aria-label="Close"
                   >
                     <X size={15} />
@@ -319,6 +326,15 @@ function AIToolsContent() {
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-y-auto p-6">
+                  {redirecting ? (
+                    <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
+                      <Loader2 size={28} className="animate-spin" style={{ color: "#0ABFA3" }} />
+                      <div>
+                        <p className="font-syne text-[15px] font-bold text-white">Taking you to your sample…</p>
+                        <p className="mt-1 text-[13px] font-dm text-white/45">Just a moment, loading {activeTool.name}.</p>
+                      </div>
+                    </div>
+                  ) : (
                   <form onSubmit={handleUnlock}>
                     <p className="mb-5 text-[13px] font-dm leading-relaxed text-white/50">
                       Tell us where to reach you and we&apos;ll take you to a live sample of {activeTool.name}.
@@ -391,6 +407,7 @@ function AIToolsContent() {
                       )}
                     </motion.button>
                   </form>
+                  )}
                 </div>
               </motion.div>
             </div>
