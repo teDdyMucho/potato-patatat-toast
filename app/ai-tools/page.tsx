@@ -6,118 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/lib/auth";
-import {
-  Zap,
-  ArrowUpRight,
-  MessageSquare,
-  Phone,
-  Send,
-  Workflow,
-  X,
-  Loader2,
-  CheckCircle,
-  Sparkles,
-} from "lucide-react";
+import { Zap, ArrowUpRight, X, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
-
-// `contactNeed` is sent to /api/leads as the lead's "need" tag. `requirePhone`
-// marks tools where a phone number is essential (Retell AI needs one to
-// actually place/receive calls). `sampleItems`/`sampleNote` back the preview
-// shown once someone unlocks the sample by submitting the gate form.
-const tools = [
-  {
-    slug: "retell-ai",
-    category: "Voice AI",
-    name: "Retell AI",
-    description:
-      "AI voice agent that answers, screens, and qualifies inbound and outbound calls 24/7 — books appointments straight into your calendar and hands off warm leads to your team.",
-    icon: Phone,
-    color: "#0ABFA3",
-    bg: "#062B26",
-    tag: "Powered by Retell AI",
-    badge: "Most Popular",
-    contactNeed: "Retell AI / VAPI",
-    requirePhone: true,
-    sampleTitle: "Sample call",
-    sampleItems: [
-      { label: "Caller", text: "Hi, I saw your ad — do you guys help with lead follow-up?" },
-      { label: "AI Agent", text: "Yes! We can set up an AI voice agent that answers every call, qualifies the lead, and books them straight into your calendar. Can I grab your name and best callback number?" },
-      { label: "Caller", text: "Sure, it's Mike, 555-2010." },
-      { label: "AI Agent", text: "Thanks, Mike! I've got you down for a free strategy call Thursday at 2 PM — you'll get a text confirmation shortly." },
-    ],
-    sampleNote: "Answers in under 2 seconds, works 24/7, and never misses a call.",
-  },
-  {
-    slug: "nurturing-ghl",
-    category: "GoHighLevel AI",
-    name: "Nurturing Sequence on GHL",
-    description:
-      "Automated multi-touch email + SMS nurture sequence built inside GoHighLevel — keeps leads warm with personalized, timed follow-ups until they're ready to buy.",
-    icon: Workflow,
-    color: "#0ABFA3",
-    bg: "#073B34",
-    tag: "Built on GoHighLevel",
-    badge: null,
-    contactNeed: "GoHighLevel Setup",
-    requirePhone: false,
-    sampleTitle: "Sample nurture timeline",
-    sampleItems: [
-      { label: "Day 0", text: "Welcome email — introduces your business and sets expectations." },
-      { label: "Day 1", text: "SMS check-in — quick, friendly nudge to stay top of mind." },
-      { label: "Day 3", text: "Value email — a case study or testimonial that builds trust." },
-      { label: "Day 6", text: "SMS + email combo — a direct offer or clear next step." },
-      { label: "Day 10", text: "Final follow-up — last touch before moving to long-term nurture." },
-    ],
-    sampleNote: "Fully automated inside your GoHighLevel account — no manual follow-up needed.",
-  },
-  {
-    slug: "outreach-ghl",
-    category: "GoHighLevel AI",
-    name: "Outreach Sequence on GHL",
-    description:
-      "Done-for-you cold outreach automation in GoHighLevel — multi-channel touchpoints, smart delays, and reply detection so your pipeline fills itself.",
-    icon: Send,
-    color: "#0ABFA3",
-    bg: "#073B34",
-    tag: "Built on GoHighLevel",
-    badge: "New",
-    contactNeed: "GoHighLevel Setup",
-    requirePhone: false,
-    sampleTitle: "Sample outreach cadence",
-    sampleItems: [
-      { label: "Day 0", text: "Cold email #1 — a personalized opener based on their industry." },
-      { label: "Day 2", text: "LinkedIn connection request with a short note." },
-      { label: "Day 4", text: "Cold email #2 — follow-up with a specific value proposition." },
-      { label: "Day 7", text: "SMS touch, when a number is available." },
-      { label: "Day 10", text: "Break-up email — final attempt that keeps the door open." },
-    ],
-    sampleNote: "The sequence pauses automatically the moment a lead replies.",
-  },
-  {
-    slug: "chatbot-ghl",
-    category: "GoHighLevel AI",
-    name: "Chat Bot on GHL",
-    description:
-      "AI chatbot embedded in your website and GoHighLevel conversations — answers FAQs, qualifies visitors, and routes hot leads to your sales team in real time.",
-    icon: MessageSquare,
-    color: "#0ABFA3",
-    bg: "#062B26",
-    tag: "Built on GoHighLevel",
-    badge: "New",
-    contactNeed: "CloseBot / Sales AI",
-    requirePhone: false,
-    sampleTitle: "Sample chat",
-    sampleItems: [
-      { label: "Visitor", text: "Hey, do you guys build websites too?" },
-      { label: "AI Chatbot", text: "We sure do! We also build AI voice agents and full GoHighLevel automation. Want me to connect you with our team?" },
-      { label: "Visitor", text: "Yes please" },
-      { label: "AI Chatbot", text: "Awesome — what's the best email to reach you at?" },
-    ],
-    sampleNote: "Embeds on your website and syncs replies straight into GoHighLevel conversations.",
-  },
-];
-
-const categories = ["All", "Voice AI", "GoHighLevel AI"];
+import { aiTools as tools, aiToolCategories as categories, type AiTool } from "@/lib/ai-tools-data";
 
 function AIToolsContent() {
   const router = useRouter();
@@ -125,8 +16,7 @@ function AIToolsContent() {
   const { user, ready, isAdmin, isStaff } = useAuth();
   const [active, setActive] = useState("All");
 
-  const [activeTool, setActiveTool] = useState<(typeof tools)[number] | null>(null);
-  const [unlocked, setUnlocked] = useState(false);
+  const [activeTool, setActiveTool] = useState<AiTool | null>(null);
   const [gateForm, setGateForm] = useState({ firstName: "", email: "", phone: "" });
   const [gateSubmitting, setGateSubmitting] = useState(false);
   const [gateError, setGateError] = useState("");
@@ -145,9 +35,8 @@ function AIToolsContent() {
   const filtered =
     active === "All" ? tools : tools.filter((t) => t.category === active);
 
-  const openSample = (tool: (typeof tools)[number]) => {
+  const openSample = (tool: AiTool) => {
     setActiveTool(tool);
-    setUnlocked(false);
     setGateError("");
     setGateForm({
       firstName: user ? user.name.trim().split(" ")[0] ?? "" : "",
@@ -158,7 +47,7 @@ function AIToolsContent() {
 
   const closeSample = () => setActiveTool(null);
 
-  const handleGetStarted = (tool: (typeof tools)[number]) => {
+  const handleGetStarted = (tool: AiTool) => {
     // Not logged in — send them to log in first, then bounce back here to
     // reopen this tool's sample modal automatically.
     if (ready && !user) {
@@ -198,7 +87,9 @@ function AIToolsContent() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "Something went wrong.");
-      setUnlocked(true);
+      const slug = activeTool.slug;
+      setActiveTool(null);
+      router.push(`/ai-tools/sample/${slug}`);
     } catch (err) {
       setGateError(
         err instanceof Error ? err.message : "Couldn't unlock the sample. Please try again.",
@@ -428,108 +319,78 @@ function AIToolsContent() {
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-y-auto p-6">
-                  {!unlocked ? (
-                    <form onSubmit={handleUnlock}>
-                      <p className="mb-5 text-[13px] font-dm leading-relaxed text-white/50">
-                        Tell us where to reach you and we&apos;ll unlock a live sample of {activeTool.name} right here.
-                      </p>
+                  <form onSubmit={handleUnlock}>
+                    <p className="mb-5 text-[13px] font-dm leading-relaxed text-white/50">
+                      Tell us where to reach you and we&apos;ll take you to a live sample of {activeTool.name}.
+                    </p>
 
+                    <div className="mb-4">
+                      <label className="mb-2 block text-[11px] font-dm font-semibold uppercase tracking-[0.14em] text-white/40">
+                        First Name <span className="text-[#0ABFA3]">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        autoComplete="given-name"
+                        className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[14px] font-dm text-white placeholder:text-white/25 transition-colors focus:border-[#0ABFA3]/60 focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/20"
+                        placeholder="Your first name"
+                        value={gateForm.firstName}
+                        onChange={(e) => setGateForm({ ...gateForm, firstName: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="mb-2 block text-[11px] font-dm font-semibold uppercase tracking-[0.14em] text-white/40">
+                        Email <span className="text-[#0ABFA3]">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[14px] font-dm text-white placeholder:text-white/25 transition-colors focus:border-[#0ABFA3]/60 focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/20"
+                        placeholder="your@email.com"
+                        value={gateForm.email}
+                        onChange={(e) => setGateForm({ ...gateForm, email: e.target.value })}
+                      />
+                    </div>
+
+                    {activeTool.requirePhone && (
                       <div className="mb-4">
                         <label className="mb-2 block text-[11px] font-dm font-semibold uppercase tracking-[0.14em] text-white/40">
-                          First Name <span className="text-[#0ABFA3]">*</span>
+                          Phone <span className="text-[#0ABFA3]">*</span>
                         </label>
                         <input
-                          type="text"
+                          type="tel"
                           required
-                          autoComplete="given-name"
+                          autoComplete="tel"
                           className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[14px] font-dm text-white placeholder:text-white/25 transition-colors focus:border-[#0ABFA3]/60 focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/20"
-                          placeholder="Your first name"
-                          value={gateForm.firstName}
-                          onChange={(e) => setGateForm({ ...gateForm, firstName: e.target.value })}
+                          placeholder="+1 555 000 0000"
+                          value={gateForm.phone}
+                          onChange={(e) => setGateForm({ ...gateForm, phone: e.target.value })}
                         />
                       </div>
+                    )}
 
-                      <div className="mb-4">
-                        <label className="mb-2 block text-[11px] font-dm font-semibold uppercase tracking-[0.14em] text-white/40">
-                          Email <span className="text-[#0ABFA3]">*</span>
-                        </label>
-                        <input
-                          type="email"
-                          required
-                          className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[14px] font-dm text-white placeholder:text-white/25 transition-colors focus:border-[#0ABFA3]/60 focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/20"
-                          placeholder="your@email.com"
-                          value={gateForm.email}
-                          onChange={(e) => setGateForm({ ...gateForm, email: e.target.value })}
-                        />
-                      </div>
-
-                      {activeTool.requirePhone && (
-                        <div className="mb-4">
-                          <label className="mb-2 block text-[11px] font-dm font-semibold uppercase tracking-[0.14em] text-white/40">
-                            Phone <span className="text-[#0ABFA3]">*</span>
-                          </label>
-                          <input
-                            type="tel"
-                            required
-                            autoComplete="tel"
-                            className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[14px] font-dm text-white placeholder:text-white/25 transition-colors focus:border-[#0ABFA3]/60 focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/20"
-                            placeholder="+1 555 000 0000"
-                            value={gateForm.phone}
-                            onChange={(e) => setGateForm({ ...gateForm, phone: e.target.value })}
-                          />
-                        </div>
-                      )}
-
-                      {gateError && (
-                        <p className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-[13px] font-dm text-red-300" role="alert">
-                          {gateError}
-                        </p>
-                      )}
-
-                      <motion.button
-                        type="submit"
-                        disabled={gateSubmitting}
-                        whileHover={{ scale: gateSubmitting ? 1 : 1.01 }}
-                        whileTap={{ scale: gateSubmitting ? 1 : 0.98 }}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-dm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                        style={{ background: "linear-gradient(135deg, #0ABFA3 0%, #089080 100%)" }}
-                      >
-                        {gateSubmitting ? (
-                          <><Loader2 size={16} className="animate-spin" /> Unlocking…</>
-                        ) : (
-                          <><Sparkles size={15} /> Show Me the Sample</>
-                        )}
-                      </motion.button>
-                    </form>
-                  ) : (
-                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
-                      <div className="mb-4 flex items-center gap-2 text-[12px] font-dm font-semibold" style={{ color: "#0ABFA3" }}>
-                        <CheckCircle size={14} />
-                        {activeTool.sampleTitle}
-                      </div>
-                      <div className="mb-5 space-y-3">
-                        {activeTool.sampleItems.map((item, i) => (
-                          <div key={i} className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3.5">
-                            <p className="mb-1 text-[10px] font-dm font-semibold uppercase tracking-widest" style={{ color: "#0ABFA3" }}>
-                              {item.label}
-                            </p>
-                            <p className="text-[13px] font-dm leading-relaxed text-white/70">{item.text}</p>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="mb-6 text-[12px] font-dm leading-relaxed text-white/40">
-                        {activeTool.sampleNote}
+                    {gateError && (
+                      <p className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-[13px] font-dm text-red-300" role="alert">
+                        {gateError}
                       </p>
-                      <button
-                        type="button"
-                        onClick={closeSample}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-dm font-bold text-white transition-opacity hover:opacity-90"
-                        style={{ background: "linear-gradient(135deg, #0ABFA3 0%, #089080 100%)" }}
-                      >
-                        Close
-                      </button>
-                    </motion.div>
-                  )}
+                    )}
+
+                    <motion.button
+                      type="submit"
+                      disabled={gateSubmitting}
+                      whileHover={{ scale: gateSubmitting ? 1 : 1.01 }}
+                      whileTap={{ scale: gateSubmitting ? 1 : 0.98 }}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-dm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                      style={{ background: "linear-gradient(135deg, #0ABFA3 0%, #089080 100%)" }}
+                    >
+                      {gateSubmitting ? (
+                        <><Loader2 size={16} className="animate-spin" /> Unlocking…</>
+                      ) : (
+                        <><Sparkles size={15} /> Show Me the Sample</>
+                      )}
+                    </motion.button>
+                  </form>
                 </div>
               </motion.div>
             </div>
