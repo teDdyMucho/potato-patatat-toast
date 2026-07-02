@@ -13,13 +13,17 @@ import {
   Phone,
   Send,
   Workflow,
-  LogIn,
+  X,
+  Loader2,
+  CheckCircle,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 
-// `contactNeed` must match one of `needOptions` in app/contact/page.tsx so the
-// contact form can pre-select it. `requirePhone` marks tools where a phone
-// number is essential (e.g. Retell AI needs one to actually place/receive calls).
+// `contactNeed` is sent to /api/leads as the lead's "need" tag. `requirePhone`
+// marks tools where a phone number is essential (Retell AI needs one to
+// actually place/receive calls). `sampleItems`/`sampleNote` back the preview
+// shown once someone unlocks the sample by submitting the gate form.
 const tools = [
   {
     category: "Voice AI",
@@ -33,6 +37,14 @@ const tools = [
     badge: "Most Popular",
     contactNeed: "Retell AI / VAPI",
     requirePhone: true,
+    sampleTitle: "Sample call",
+    sampleItems: [
+      { label: "Caller", text: "Hi, I saw your ad — do you guys help with lead follow-up?" },
+      { label: "AI Agent", text: "Yes! We can set up an AI voice agent that answers every call, qualifies the lead, and books them straight into your calendar. Can I grab your name and best callback number?" },
+      { label: "Caller", text: "Sure, it's Mike, 555-2010." },
+      { label: "AI Agent", text: "Thanks, Mike! I've got you down for a free strategy call Thursday at 2 PM — you'll get a text confirmation shortly." },
+    ],
+    sampleNote: "Answers in under 2 seconds, works 24/7, and never misses a call.",
   },
   {
     category: "GoHighLevel AI",
@@ -46,6 +58,15 @@ const tools = [
     badge: null,
     contactNeed: "GoHighLevel Setup",
     requirePhone: false,
+    sampleTitle: "Sample nurture timeline",
+    sampleItems: [
+      { label: "Day 0", text: "Welcome email — introduces your business and sets expectations." },
+      { label: "Day 1", text: "SMS check-in — quick, friendly nudge to stay top of mind." },
+      { label: "Day 3", text: "Value email — a case study or testimonial that builds trust." },
+      { label: "Day 6", text: "SMS + email combo — a direct offer or clear next step." },
+      { label: "Day 10", text: "Final follow-up — last touch before moving to long-term nurture." },
+    ],
+    sampleNote: "Fully automated inside your GoHighLevel account — no manual follow-up needed.",
   },
   {
     category: "GoHighLevel AI",
@@ -59,6 +80,15 @@ const tools = [
     badge: "New",
     contactNeed: "GoHighLevel Setup",
     requirePhone: false,
+    sampleTitle: "Sample outreach cadence",
+    sampleItems: [
+      { label: "Day 0", text: "Cold email #1 — a personalized opener based on their industry." },
+      { label: "Day 2", text: "LinkedIn connection request with a short note." },
+      { label: "Day 4", text: "Cold email #2 — follow-up with a specific value proposition." },
+      { label: "Day 7", text: "SMS touch, when a number is available." },
+      { label: "Day 10", text: "Break-up email — final attempt that keeps the door open." },
+    ],
+    sampleNote: "The sequence pauses automatically the moment a lead replies.",
   },
   {
     category: "GoHighLevel AI",
@@ -72,6 +102,14 @@ const tools = [
     badge: "New",
     contactNeed: "CloseBot / Sales AI",
     requirePhone: false,
+    sampleTitle: "Sample chat",
+    sampleItems: [
+      { label: "Visitor", text: "Hey, do you guys build websites too?" },
+      { label: "AI Chatbot", text: "We sure do! We also build AI voice agents and full GoHighLevel automation. Want me to connect you with our team?" },
+      { label: "Visitor", text: "Yes please" },
+      { label: "AI Chatbot", text: "Awesome — what's the best email to reach you at?" },
+    ],
+    sampleNote: "Embeds on your website and syncs replies straight into GoHighLevel conversations.",
   },
 ];
 
@@ -81,7 +119,12 @@ export default function AIToolsPage() {
   const router = useRouter();
   const { user, ready, isAdmin, isStaff } = useAuth();
   const [active, setActive] = useState("All");
-  const [loginPromptDest, setLoginPromptDest] = useState<string | null>(null);
+
+  const [activeTool, setActiveTool] = useState<(typeof tools)[number] | null>(null);
+  const [unlocked, setUnlocked] = useState(false);
+  const [gateForm, setGateForm] = useState({ firstName: "", email: "", phone: "" });
+  const [gateSubmitting, setGateSubmitting] = useState(false);
+  const [gateError, setGateError] = useState("");
 
   // Regular users get the personalised dashboard; admin/staff stay on this page
   useEffect(() => {
@@ -91,18 +134,47 @@ export default function AIToolsPage() {
   const filtered =
     active === "All" ? tools : tools.filter((t) => t.category === active);
 
-  const handleGetStarted = (tool: (typeof tools)[number]) => {
-    const params = new URLSearchParams({ need: tool.contactNeed });
-    if (tool.requirePhone) params.set("requirePhone", "1");
-    const dest = `/contact?${params.toString()}`;
+  const openSample = (tool: (typeof tools)[number]) => {
+    setActiveTool(tool);
+    setUnlocked(false);
+    setGateError("");
+    setGateForm({
+      firstName: user ? user.name.trim().split(" ")[0] ?? "" : "",
+      email: user?.email ?? "",
+      phone: "",
+    });
+  };
 
-    // Not logged in yet — ask them to log in first so we can carry their
-    // details over, instead of sending them straight to the contact form.
-    if (ready && !user) {
-      setLoginPromptDest(dest);
-      return;
+  const closeSample = () => setActiveTool(null);
+
+  const handleUnlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeTool) return;
+    setGateError("");
+    setGateSubmitting(true);
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: gateForm.firstName,
+          email: gateForm.email,
+          phone: gateForm.phone,
+          need: activeTool.contactNeed,
+          message: `Requested a sample of "${activeTool.name}" from the AI Tools page.`,
+          userId: user?.id ?? null,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Something went wrong.");
+      setUnlocked(true);
+    } catch (err) {
+      setGateError(
+        err instanceof Error ? err.message : "Couldn't unlock the sample. Please try again.",
+      );
+    } finally {
+      setGateSubmitting(false);
     }
-    router.push(dest);
   };
 
   return (
@@ -234,7 +306,7 @@ export default function AIToolsPage() {
                       <span className="text-[11px] font-dm text-muted">{tool.tag}</span>
                       <button
                         type="button"
-                        onClick={() => handleGetStarted(tool)}
+                        onClick={() => openSample(tool)}
                         className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[12px] font-dm font-semibold text-white transition-opacity hover:opacity-90"
                         style={{ background: "#0ABFA3" }}
                       >
@@ -281,54 +353,153 @@ export default function AIToolsPage() {
       </main>
       <Footer />
 
-      {/* ── Login-required modal ── */}
+      {/* ── Sample unlock / preview modal ── */}
       <AnimatePresence>
-        {loginPromptDest && (
+        {activeTool && (
           <>
             <motion.div
-              key="login-prompt-backdrop"
+              key="sample-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
-              onClick={() => setLoginPromptDest(null)}
+              onClick={closeSample}
             />
             <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">
               <motion.div
-                key="login-prompt-panel"
+                key="sample-panel"
                 initial={{ opacity: 0, scale: 0.93, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.93, y: 20 }}
                 transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                className="pointer-events-auto w-full max-w-sm rounded-2xl border border-white/10 bg-[#0c0c0e] p-6 text-center shadow-2xl shadow-black/60"
+                className="pointer-events-auto flex w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0c0c0e] shadow-2xl shadow-black/60"
+                style={{ maxHeight: "min(88vh, 640px)" }}
               >
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full" style={{ background: "#062B26" }}>
-                  <LogIn size={20} style={{ color: "#0ABFA3" }} />
-                </div>
-                <h3 className="mb-2 font-syne text-[17px] font-bold text-white">
-                  Log in to continue
-                </h3>
-                <p className="mb-6 text-[13px] font-dm leading-relaxed text-white/50">
-                  Create a free account or log in so we can carry your details
-                  over and get back to you about this.
-                </p>
-                <div className="flex flex-col gap-2.5">
-                  <Link
-                    href={`/login?redirect=${encodeURIComponent(loginPromptDest)}`}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-dm font-bold text-white transition-opacity hover:opacity-90"
-                    style={{ background: "linear-gradient(135deg, #0ABFA3 0%, #089080 100%)" }}
-                  >
-                    <LogIn size={15} />
-                    Log In
-                  </Link>
+                {/* Header */}
+                <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: activeTool.bg }}>
+                      <activeTool.icon size={17} style={{ color: activeTool.color }} strokeWidth={1.75} />
+                    </div>
+                    <div>
+                      <p className="font-syne text-[15px] font-bold text-white">{activeTool.name}</p>
+                      <p className="text-[12px] font-dm text-white/40">{activeTool.tag}</p>
+                    </div>
+                  </div>
                   <button
-                    type="button"
-                    onClick={() => setLoginPromptDest(null)}
-                    className="rounded-xl py-3 text-[13px] font-dm font-semibold text-white/45 transition-colors hover:text-white"
+                    onClick={closeSample}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 text-white/40 transition-colors hover:bg-white/5 hover:text-white"
+                    aria-label="Close"
                   >
-                    Cancel
+                    <X size={15} />
                   </button>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto p-6">
+                  {!unlocked ? (
+                    <form onSubmit={handleUnlock}>
+                      <p className="mb-5 text-[13px] font-dm leading-relaxed text-white/50">
+                        Tell us where to reach you and we&apos;ll unlock a live sample of {activeTool.name} right here.
+                      </p>
+
+                      <div className="mb-4">
+                        <label className="mb-2 block text-[11px] font-dm font-semibold uppercase tracking-[0.14em] text-white/40">
+                          First Name <span className="text-[#0ABFA3]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          autoComplete="given-name"
+                          className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[14px] font-dm text-white placeholder:text-white/25 transition-colors focus:border-[#0ABFA3]/60 focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/20"
+                          placeholder="Your first name"
+                          value={gateForm.firstName}
+                          onChange={(e) => setGateForm({ ...gateForm, firstName: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="mb-4">
+                        <label className="mb-2 block text-[11px] font-dm font-semibold uppercase tracking-[0.14em] text-white/40">
+                          Email <span className="text-[#0ABFA3]">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[14px] font-dm text-white placeholder:text-white/25 transition-colors focus:border-[#0ABFA3]/60 focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/20"
+                          placeholder="your@email.com"
+                          value={gateForm.email}
+                          onChange={(e) => setGateForm({ ...gateForm, email: e.target.value })}
+                        />
+                      </div>
+
+                      {activeTool.requirePhone && (
+                        <div className="mb-4">
+                          <label className="mb-2 block text-[11px] font-dm font-semibold uppercase tracking-[0.14em] text-white/40">
+                            Phone <span className="text-[#0ABFA3]">*</span>
+                          </label>
+                          <input
+                            type="tel"
+                            required
+                            autoComplete="tel"
+                            className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[14px] font-dm text-white placeholder:text-white/25 transition-colors focus:border-[#0ABFA3]/60 focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/20"
+                            placeholder="+1 555 000 0000"
+                            value={gateForm.phone}
+                            onChange={(e) => setGateForm({ ...gateForm, phone: e.target.value })}
+                          />
+                        </div>
+                      )}
+
+                      {gateError && (
+                        <p className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-[13px] font-dm text-red-300" role="alert">
+                          {gateError}
+                        </p>
+                      )}
+
+                      <motion.button
+                        type="submit"
+                        disabled={gateSubmitting}
+                        whileHover={{ scale: gateSubmitting ? 1 : 1.01 }}
+                        whileTap={{ scale: gateSubmitting ? 1 : 0.98 }}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-dm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                        style={{ background: "linear-gradient(135deg, #0ABFA3 0%, #089080 100%)" }}
+                      >
+                        {gateSubmitting ? (
+                          <><Loader2 size={16} className="animate-spin" /> Unlocking…</>
+                        ) : (
+                          <><Sparkles size={15} /> Show Me the Sample</>
+                        )}
+                      </motion.button>
+                    </form>
+                  ) : (
+                    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+                      <div className="mb-4 flex items-center gap-2 text-[12px] font-dm font-semibold" style={{ color: "#0ABFA3" }}>
+                        <CheckCircle size={14} />
+                        {activeTool.sampleTitle}
+                      </div>
+                      <div className="mb-5 space-y-3">
+                        {activeTool.sampleItems.map((item, i) => (
+                          <div key={i} className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-3.5">
+                            <p className="mb-1 text-[10px] font-dm font-semibold uppercase tracking-widest" style={{ color: "#0ABFA3" }}>
+                              {item.label}
+                            </p>
+                            <p className="text-[13px] font-dm leading-relaxed text-white/70">{item.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mb-6 text-[12px] font-dm leading-relaxed text-white/40">
+                        {activeTool.sampleNote}
+                      </p>
+                      <Link
+                        href="/contact"
+                        onClick={closeSample}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-dm font-bold text-white transition-opacity hover:opacity-90"
+                        style={{ background: "linear-gradient(135deg, #0ABFA3 0%, #089080 100%)" }}
+                      >
+                        Book a Free Consultation
+                        <ArrowUpRight size={15} />
+                      </Link>
+                    </motion.div>
+                  )}
                 </div>
               </motion.div>
             </div>
