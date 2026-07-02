@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -110,22 +110,27 @@ export async function POST(request: Request) {
     submitted_at: new Date().toISOString(),
   };
 
-  fetch(WEBHOOK_URL, {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify(webhookPayload),
-  }).catch((err) => console.error("GHL webhook error:", err.message));
-
-  // ── 3. Fire the tool-specific automation webhook, if this came from an
-  //       /ai-tools sample unlock (non-blocking) ────────────────────────────
+  // `after()` keeps the serverless function alive just long enough for these
+  // to finish, without delaying the response to the user. A bare fire-and-forget
+  // fetch() here gets killed mid-flight the instant the response is sent —
+  // Vercel freezes the execution environment right after, so the webhook
+  // never actually reaches its destination.
   const toolWebhookUrl = toolSlug ? TOOL_WEBHOOKS[toolSlug] : null;
-  if (toolWebhookUrl) {
-    fetch(toolWebhookUrl, {
+  after(async () => {
+    await fetch(WEBHOOK_URL, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ ...webhookPayload, tool_slug: toolSlug }),
-    }).catch((err) => console.error(`Tool webhook error (${toolSlug}):`, err.message));
-  }
+      body:    JSON.stringify(webhookPayload),
+    }).catch((err) => console.error("GHL webhook error:", err.message));
+
+    if (toolWebhookUrl) {
+      await fetch(toolWebhookUrl, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ ...webhookPayload, tool_slug: toolSlug }),
+      }).catch((err) => console.error(`Tool webhook error (${toolSlug}):`, err.message));
+    }
+  });
 
   return NextResponse.json({ ok: true, lead_id: leadId });
 }

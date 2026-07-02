@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { Zap, ArrowUpRight, X, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { aiTools as tools, aiToolCategories as categories, type AiTool } from "@/lib/ai-tools-data";
+import { countryCodes, toE164, E164_RE } from "@/lib/phone-country-codes";
 
 function AIToolsContent() {
   const router = useRouter();
@@ -18,6 +19,7 @@ function AIToolsContent() {
 
   const [activeTool, setActiveTool] = useState<AiTool | null>(null);
   const [gateForm, setGateForm] = useState({ firstName: "", email: "", phone: "" });
+  const [countryCode, setCountryCode] = useState(countryCodes[0].code);
   const [gateSubmitting, setGateSubmitting] = useState(false);
   const [gateError, setGateError] = useState("");
   const [redirecting, setRedirecting] = useState(false);
@@ -40,6 +42,7 @@ function AIToolsContent() {
     setActiveTool(tool);
     setGateError("");
     setRedirecting(false);
+    setCountryCode(countryCodes[0].code);
     setGateForm({
       firstName: user ? user.name.trim().split(" ")[0] ?? "" : "",
       email: user?.email ?? "",
@@ -76,6 +79,13 @@ function AIToolsContent() {
     e.preventDefault();
     if (!activeTool) return;
     setGateError("");
+
+    const phoneE164 = gateForm.phone ? toE164(countryCode, gateForm.phone) : "";
+    if (activeTool.requirePhone && !E164_RE.test(phoneE164)) {
+      setGateError("Please enter a valid phone number.");
+      return;
+    }
+
     setGateSubmitting(true);
     try {
       const res = await fetch("/api/leads", {
@@ -84,7 +94,7 @@ function AIToolsContent() {
         body: JSON.stringify({
           firstName: gateForm.firstName,
           email: gateForm.email,
-          phone: gateForm.phone,
+          phone: phoneE164,
           need: activeTool.contactNeed,
           message: `Requested a sample of "${activeTool.name}" from the AI Tools page.`,
           userId: user?.id ?? null,
@@ -375,15 +385,32 @@ function AIToolsContent() {
                         <label className="mb-2 block text-[11px] font-dm font-semibold uppercase tracking-[0.14em] text-white/40">
                           Phone <span className="text-[#0ABFA3]">*</span>
                         </label>
-                        <input
-                          type="tel"
-                          required
-                          autoComplete="tel"
-                          className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[14px] font-dm text-white placeholder:text-white/25 transition-colors focus:border-[#0ABFA3]/60 focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/20"
-                          placeholder="+1 555 000 0000"
-                          value={gateForm.phone}
-                          onChange={(e) => setGateForm({ ...gateForm, phone: e.target.value })}
-                        />
+                        <div className="flex gap-2">
+                          <select
+                            value={countryCode}
+                            onChange={(e) => setCountryCode(e.target.value)}
+                            aria-label="Country code"
+                            className="w-[104px] shrink-0 rounded-xl border border-white/[0.08] bg-white/[0.03] px-2 text-[13px] font-dm text-white transition-colors focus:border-[#0ABFA3]/60 focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/20"
+                          >
+                            {countryCodes.map((c) => (
+                              <option key={c.label} value={c.code} className="bg-[#0c0c0e]">
+                                {c.code}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="tel"
+                            required
+                            autoComplete="tel"
+                            className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[14px] font-dm text-white placeholder:text-white/25 transition-colors focus:border-[#0ABFA3]/60 focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/20"
+                            placeholder="09XX XXX XXXX"
+                            value={gateForm.phone}
+                            onChange={(e) => setGateForm({ ...gateForm, phone: e.target.value })}
+                          />
+                        </div>
+                        <p className="mt-1.5 text-[11px] font-dm text-white/30">
+                          Pick your country, then enter your number as you&apos;d normally dial it.
+                        </p>
                       </div>
                     )}
 
