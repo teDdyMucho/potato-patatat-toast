@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
@@ -26,6 +26,7 @@ import Link from "next/link";
 // shown once someone unlocks the sample by submitting the gate form.
 const tools = [
   {
+    slug: "retell-ai",
     category: "Voice AI",
     name: "Retell AI",
     description:
@@ -47,6 +48,7 @@ const tools = [
     sampleNote: "Answers in under 2 seconds, works 24/7, and never misses a call.",
   },
   {
+    slug: "nurturing-ghl",
     category: "GoHighLevel AI",
     name: "Nurturing Sequence on GHL",
     description:
@@ -69,6 +71,7 @@ const tools = [
     sampleNote: "Fully automated inside your GoHighLevel account — no manual follow-up needed.",
   },
   {
+    slug: "outreach-ghl",
     category: "GoHighLevel AI",
     name: "Outreach Sequence on GHL",
     description:
@@ -91,6 +94,7 @@ const tools = [
     sampleNote: "The sequence pauses automatically the moment a lead replies.",
   },
   {
+    slug: "chatbot-ghl",
     category: "GoHighLevel AI",
     name: "Chat Bot on GHL",
     description:
@@ -115,8 +119,9 @@ const tools = [
 
 const categories = ["All", "Voice AI", "GoHighLevel AI"];
 
-export default function AIToolsPage() {
+function AIToolsContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, ready, isAdmin, isStaff } = useAuth();
   const [active, setActive] = useState("All");
 
@@ -126,10 +131,16 @@ export default function AIToolsPage() {
   const [gateSubmitting, setGateSubmitting] = useState(false);
   const [gateError, setGateError] = useState("");
 
-  // Regular users get the personalised dashboard; admin/staff stay on this page
+  // Regular users get the personalised dashboard; admin/staff stay on this
+  // page. Skipped while a tool's sample modal is open (or about to be reopened
+  // via ?openTool=) so a regular customer coming back from login still gets
+  // to see the sample before being sent to their dashboard.
+  const pendingOpenTool = searchParams.get("openTool");
   useEffect(() => {
-    if (ready && user && !isAdmin && !isStaff) router.replace("/dashboard");
-  }, [ready, user, isAdmin, isStaff, router]);
+    if (ready && user && !isAdmin && !isStaff && !pendingOpenTool && !activeTool) {
+      router.replace("/dashboard");
+    }
+  }, [ready, user, isAdmin, isStaff, pendingOpenTool, activeTool, router]);
 
   const filtered =
     active === "All" ? tools : tools.filter((t) => t.category === active);
@@ -146,6 +157,26 @@ export default function AIToolsPage() {
   };
 
   const closeSample = () => setActiveTool(null);
+
+  const handleGetStarted = (tool: (typeof tools)[number]) => {
+    // Not logged in — send them to log in first, then bounce back here to
+    // reopen this tool's sample modal automatically.
+    if (ready && !user) {
+      router.push(`/login?redirect=${encodeURIComponent(`/ai-tools?openTool=${tool.slug}`)}`);
+      return;
+    }
+    openSample(tool);
+  };
+
+  // Coming back from a login redirect (?openTool=<slug>) — reopen the tool's
+  // sample modal now that we're logged in, then clean the URL.
+  useEffect(() => {
+    if (!ready || !user || !pendingOpenTool) return;
+    const tool = tools.find((t) => t.slug === pendingOpenTool);
+    if (tool) openSample(tool);
+    router.replace("/ai-tools");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, user, pendingOpenTool]);
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -306,7 +337,7 @@ export default function AIToolsPage() {
                       <span className="text-[11px] font-dm text-muted">{tool.tag}</span>
                       <button
                         type="button"
-                        onClick={() => openSample(tool)}
+                        onClick={() => handleGetStarted(tool)}
                         className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[12px] font-dm font-semibold text-white transition-opacity hover:opacity-90"
                         style={{ background: "#0ABFA3" }}
                       >
@@ -507,5 +538,13 @@ export default function AIToolsPage() {
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+export default function AIToolsPage() {
+  return (
+    <Suspense fallback={null}>
+      <AIToolsContent />
+    </Suspense>
   );
 }
