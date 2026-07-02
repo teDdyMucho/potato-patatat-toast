@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import DashboardShell from "@/components/DashboardShell";
 import { useAuth } from "@/lib/auth";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,8 +40,12 @@ const steps = [
 const inputCls =
   "w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-[14px] font-dm text-white placeholder:text-white/25 transition-colors focus:border-[#0ABFA3]/60 focus:outline-none focus:ring-1 focus:ring-[#0ABFA3]/20";
 
-export default function ContactPage() {
+function ContactForm() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const prefilledNeed = searchParams.get("need");
+  const phoneRequired = searchParams.get("requirePhone") === "1";
+
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -62,7 +67,9 @@ export default function ContactPage() {
     }
   }, [user]);
 
-  const [needs, setNeeds] = useState<string[]>([]);
+  const [needs, setNeeds] = useState<string[]>(() =>
+    prefilledNeed && needOptions.includes(prefilledNeed) ? [prefilledNeed] : [],
+  );
   const [submitted, setSubmitted] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -326,10 +333,11 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <label className="mb-2 block text-[11px] font-dm font-semibold uppercase tracking-[0.14em] text-white/40">
-                        Phone
+                        Phone {phoneRequired && <span className="text-[#0ABFA3]">*</span>}
                       </label>
                       <input
                         type="tel"
+                        required={phoneRequired}
                         autoComplete="tel"
                         className={inputCls}
                         placeholder="+1 555 000 0000"
@@ -510,5 +518,13 @@ export default function ContactPage() {
         )}
       </AnimatePresence>
     </DashboardShell>
+  );
+}
+
+export default function ContactPage() {
+  return (
+    <Suspense fallback={null}>
+      <ContactForm />
+    </Suspense>
   );
 }

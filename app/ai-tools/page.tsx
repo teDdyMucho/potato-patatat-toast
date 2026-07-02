@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/lib/auth";
@@ -13,9 +13,13 @@ import {
   Phone,
   Send,
   Workflow,
+  LogIn,
 } from "lucide-react";
 import Link from "next/link";
 
+// `contactNeed` must match one of `needOptions` in app/contact/page.tsx so the
+// contact form can pre-select it. `requirePhone` marks tools where a phone
+// number is essential (e.g. Retell AI needs one to actually place/receive calls).
 const tools = [
   {
     category: "Voice AI",
@@ -27,6 +31,8 @@ const tools = [
     bg: "#062B26",
     tag: "Powered by Retell AI",
     badge: "Most Popular",
+    contactNeed: "Retell AI / VAPI",
+    requirePhone: true,
   },
   {
     category: "GoHighLevel AI",
@@ -38,6 +44,8 @@ const tools = [
     bg: "#073B34",
     tag: "Built on GoHighLevel",
     badge: null,
+    contactNeed: "GoHighLevel Setup",
+    requirePhone: false,
   },
   {
     category: "GoHighLevel AI",
@@ -49,6 +57,8 @@ const tools = [
     bg: "#073B34",
     tag: "Built on GoHighLevel",
     badge: "New",
+    contactNeed: "GoHighLevel Setup",
+    requirePhone: false,
   },
   {
     category: "GoHighLevel AI",
@@ -60,6 +70,8 @@ const tools = [
     bg: "#062B26",
     tag: "Built on GoHighLevel",
     badge: "New",
+    contactNeed: "CloseBot / Sales AI",
+    requirePhone: false,
   },
 ];
 
@@ -69,6 +81,7 @@ export default function AIToolsPage() {
   const router = useRouter();
   const { user, ready, isAdmin, isStaff } = useAuth();
   const [active, setActive] = useState("All");
+  const [loginPromptDest, setLoginPromptDest] = useState<string | null>(null);
 
   // Regular users get the personalised dashboard; admin/staff stay on this page
   useEffect(() => {
@@ -77,6 +90,20 @@ export default function AIToolsPage() {
 
   const filtered =
     active === "All" ? tools : tools.filter((t) => t.category === active);
+
+  const handleGetStarted = (tool: (typeof tools)[number]) => {
+    const params = new URLSearchParams({ need: tool.contactNeed });
+    if (tool.requirePhone) params.set("requirePhone", "1");
+    const dest = `/contact?${params.toString()}`;
+
+    // Not logged in yet — ask them to log in first so we can carry their
+    // details over, instead of sending them straight to the contact form.
+    if (ready && !user) {
+      setLoginPromptDest(dest);
+      return;
+    }
+    router.push(dest);
+  };
 
   return (
     <>
@@ -205,14 +232,15 @@ export default function AIToolsPage() {
                     {/* Footer: tag + action */}
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-[11px] font-dm text-muted">{tool.tag}</span>
-                      <Link
-                        href="/contact"
+                      <button
+                        type="button"
+                        onClick={() => handleGetStarted(tool)}
                         className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[12px] font-dm font-semibold text-white transition-opacity hover:opacity-90"
                         style={{ background: "#0ABFA3" }}
                       >
                         <Zap size={12} fill="white" />
                         Get Started
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 );
@@ -252,6 +280,61 @@ export default function AIToolsPage() {
         </section>
       </main>
       <Footer />
+
+      {/* ── Login-required modal ── */}
+      <AnimatePresence>
+        {loginPromptDest && (
+          <>
+            <motion.div
+              key="login-prompt-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
+              onClick={() => setLoginPromptDest(null)}
+            />
+            <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                key="login-prompt-panel"
+                initial={{ opacity: 0, scale: 0.93, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.93, y: 20 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                className="pointer-events-auto w-full max-w-sm rounded-2xl border border-white/10 bg-[#0c0c0e] p-6 text-center shadow-2xl shadow-black/60"
+              >
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full" style={{ background: "#062B26" }}>
+                  <LogIn size={20} style={{ color: "#0ABFA3" }} />
+                </div>
+                <h3 className="mb-2 font-syne text-[17px] font-bold text-white">
+                  Log in to continue
+                </h3>
+                <p className="mb-6 text-[13px] font-dm leading-relaxed text-white/50">
+                  Create a free account or log in so we can carry your details
+                  over and get back to you about this.
+                </p>
+                <div className="flex flex-col gap-2.5">
+                  <Link
+                    href={`/login?redirect=${encodeURIComponent(loginPromptDest)}`}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-dm font-bold text-white transition-opacity hover:opacity-90"
+                    style={{ background: "linear-gradient(135deg, #0ABFA3 0%, #089080 100%)" }}
+                  >
+                    <LogIn size={15} />
+                    Log In
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setLoginPromptDest(null)}
+                    className="rounded-xl py-3 text-[13px] font-dm font-semibold text-white/45 transition-colors hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }
